@@ -1,0 +1,35 @@
+int pinV = A1;  //Analog pin measuring voltage
+int pinA = A0;  //Analog pin measuring current
+int pinGate = 3; // digital pin controlling the gate voltage
+
+void setup() {
+  int period = 256; //Period time for a square sequence
+  int duty[period]; //Array filled with values for how long the square part will be in the pulse.
+  int settlingTime = 1000; //(in us)
+  int MeasurmentPaus = 1000000; //(in us)
+  int tracker = 0; //Keeping track of the current measurment series
+  int MeasuredV[period]; //Array storing the measured voltages for a series
+  int MeasuredA[period]; //Array storing the measured current for a series
+
+  for (int j = 0; j < period; j++) {
+    duty[j] = j;
+  }
+}
+void loop() {
+  Serial.print("Measurment series " + tracker + " initiated");
+
+  for (int j = 0; j < period; j++) {
+    analogWrite(pinGate, duty(j)); //Creates square waves with the current duty
+    delay(settlingTime); //Circuit is allowed to enter steadystate
+    measuredV[j] = analogRead(pinV); //Measures V
+    measuredA[j] = analogRead(pinA); //Measures A
+    Serial.print("The volt for duty " + duty[j] + " is:");
+    Serial.print(measuredV[j]);
+    Serial.print("And the current is:");
+    Serial.print(measuredA[j]);
+  }
+  //exports measuredV and measuredA with tracker to Arduino Mega
+  tracker++;
+  delay(MeasurmentPaus); //Delays the next measurment series so not to flood the receiver
+}
+
