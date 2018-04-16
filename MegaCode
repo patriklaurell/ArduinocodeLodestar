@@ -1,3 +1,6 @@
+int SCL = PD0;  //Clock pin
+int SDA = PD1;  //Data reciever pin
+
 void setup() {
   Wire.begin(); 
 }
@@ -9,13 +12,12 @@ clockDelay=500; //delay in ms
 void loop() {
   delay(clockDelay);
   Wire.beginTransmission(1); // transmit to device #1
-  Wire.write("measure");              // sends one byte
+  Wire.write("collect");              // sends one byte
   Wire.endTransmission();    // stop transmitting
 
   delay(clockDelay);
   Wire.beginTransmission(2); // transmit to device #2
-  Wire.write("x is ");        // sends five bytes
-  Wire.write(x);              // sends one byte
+  Wire.write("collect");        // sends five bytes
   Wire.endTransmission();    // stop transmitting
   
   x++;
