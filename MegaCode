@@ -19,13 +19,12 @@ for (int i = 1; i<=3; i++) {
   Wire.endTransmission();    // stop transmitting
 }
 
-For (int i = 1; i<=2; i++) {
-For (int j = 0; j<256; j++) {
+For (int i = 1; i<=2; i++) { //Reading from diffrent nanos
+For (int j = 0; j<256; j++) { //sends measurmentV array
 
 int position = 0;
-long value;
 byte read[2];
-while(Wire.available())
+while(Wire.available()) //sends an int as two bytes
 {
     read[position++] = Wire.read();
     if(position == 2) 
