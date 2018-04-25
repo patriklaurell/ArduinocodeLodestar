@@ -36,7 +36,7 @@ while(Wire.available())
     position++;
     if(position == 2) 
     {
-        value = GetLong(read);
+        measurment[i] = GetLong(read);
         break;
     }
 }
