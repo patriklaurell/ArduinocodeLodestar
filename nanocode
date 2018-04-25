@@ -1,25 +1,82 @@
+int pinV = A1;  //Analog pin measuring voltage
+int pinA = A0;  //Analog pin measuring current
+int pinGate = 3; // digital pin controlling the gate voltage
+
+//int period = 256; //Period time for a square sequence
+int duty[256]; //Array filled with values for how long the square part will be in the pulse.
+int settlingTime = 3; //(in ms)
+//int measurmentPause = 5000; //(in ms)
+int tracker = 0; //Keeping track of the current sent data series
+int measuredV[256]; //Array storing the measured voltages for a series
+int measuredA[256]; //Array storing the measured current for a series
+int readTime = 100; // in us
+int samples = 300; // number of saples per duty
+byte data[4];
+
 void setup() {
-  // put your setup code here, to run once:
-int analogPin1 = 1;  //inpins for 1-3 respectively
-int analogPin2 = 2; 
-int analogPin3 = 3; 
+ //Serial.begin(9600); 
+ Wire.begin(1);
+  Wire.onRequest(request);
+  Wire.onRecieve(event);
 
-int val1= 0; // variable to store the read value for 1-3 respectively
-int val2= 0;
-int val3= 0;
-
-//pinMode(1, INPUT);
-//pinMode(2, INPUT);
-//pinMode(3, INPUT);
+  for (int j = 0; j <= 255; j++) { // duty cycle of pwm wave.
+    duty[j] = j;
+  }
+}
+void loop() {
+delay(100);
 }
 
-void loop() {
-  val1 = analogRead(inPin1); //It takes about 100 microseconds (0.0001 s) to read an analog input, so the maximum reading rate is about 10,000 times a second.
-  val2 = analogRead(inPin2); //resolution is 5 volts / 1024
-  val3 = analogRead(inPin3); 
+void event(int howMany) {
+  /*
+  Serial.print("Measurment series ");
+  Serial.print(tracker);
+  Serial.println(" initiated");
+*/
 
-// analogWrite(ledPin, val);    sets the LED to the button's value
+  for (int j = 0; j <= 255; j++) {
+    analogWrite(pinGate, duty[j]); //Creates square waves with the current duty
+    delay(settlingTime); //Circuit is allowed to enter steadystate
+
+    int32_t averageV = 0;
+    int32_t averageA = 0;
+    
+    for (int i = 0; i < samples; i++) {
+    averageV = averageV + analogRead(pinV); //Measures V
+    averageA = averageA + analogRead(pinA); //Measures A
+    delayMicroseconds(readTime); //Prevents interferance when measuring  
+    }
+    measuredV[j] = averageV/samples;
+    measuredA[j] = averageA/samples;
+    
+    /*
+    Serial.print(duty[j]);
+    Serial.print(" ");
+    Serial.print(measuredV[j]);
+    Serial.print(" ");
+    Serial.println(measuredA[j]);
+    */
+  }
+  
+ 
+}
+
+void request() {
+ data=IntToByte(measuredV[tracker],measuredA[tracker]);
+ tracker++;
+ if (tracker==255){
+ tracker=0;
+ }
+ Wire.write(data,4);
 
 
+}
 
+byte[] IntToByte(int a, int b) {
+byte[4] b;
+b[0]=highByte(a);
+b[1]=lowByte(a);
+b[2]=highByte(b);
+b[3]=lowByte(b);
+return b;
 }
