@@ -1,7 +1,9 @@
 int SCL = PD0;  //Clock pin
 int SDA = PD1;  //Data reciever pin
-int measurement[];
-Boolean hasMeasurement=false;
+int measurementV[];
+int measurementC[];
+Boolean hasMeasurementV=false;
+Boolean hasMeasurementC=false;
 void setup() {
   Wire.begin(); 
 }
@@ -20,7 +22,10 @@ for (int i = 1; i<=3; i++) {
 }
 
 For (int i = 1; i<=2; i++) { //Reading from diffrent nanos
+
 For (int j = 0; j<256; j++) { //sends measurmentV array
+
+Wire.requestFrom(i,2);
 
 int position = 0;
 byte read[2];
@@ -29,17 +34,18 @@ while(Wire.available()) //sends an int as two bytes
     read[position++] = Wire.read();
     if(position == 2) 
     {
-        measurement[j] = GetInt(read);
+        measurementV[j] = GetInt(read);
         break;
     }
    }
-   if (j=255) {
-   hasMeasurement=true;
+   if (j==255) {
+   hasMeasurementV=true;
    }
   }
-  if(){
+  if(hasMeasurementV==true&&hasMeasurementC==true){
   //Sends the measurment away
-  hasMeasurement=false; 
+  hasMeasurementV=false; 
+  hasMeasurementC=false; 
   }
   
 }
