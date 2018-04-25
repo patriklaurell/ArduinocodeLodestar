@@ -39,7 +39,7 @@ while(Wire.available())
    }
   }
   if(){
-  
+  //Sends the measurment away
   hasMeasurement=false; 
   }
   
