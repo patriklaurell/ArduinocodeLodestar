@@ -2,10 +2,16 @@ int SCL = PD0;  //Clock pin
 int SDA = PD1;  //Data reciever pin
 int measurementV[];
 int measurementC[];
-Boolean hasMeasurementV=false;
-Boolean hasMeasurementC=false;
+Boolean hasMeasurement=false;
 void setup() {
-  Wire.begin(); 
+  Wire.begin(0); 
+  
+  for (int i = 1; i<=3; i++) {
+  delay(clockDelay);
+  Wire.beginTransmission(i); // transmit to device #1,2,3
+  Wire.write(1);              // sends one bit, 1 means initialize 
+  Wire.endTransmission();    // stop transmitting
+}
 }
 
 byte x = 0;
@@ -14,38 +20,45 @@ clockDelay=500; //delay in ms
 
 void loop() {
 
-for (int i = 1; i<=3; i++) {
-  delay(clockDelay);
-  Wire.beginTransmission(j); // transmit to device #1,2,3
-  Wire.write(i);              // sends one bit, 0 means initialize and 1 collect
-  Wire.endTransmission();    // stop transmitting
-}
+
 
 For (int i = 1; i<=2; i++) { //Reading from diffrent nanos
 
 For (int j = 0; j<256; j++) { //sends measurmentV array
 
-Wire.requestFrom(i,2);
-
+Wire.requestFrom(i,4); // recieves one V and one C measurement
 int position = 0;
-byte read[2];
-while(Wire.available()) //sends an int as two bytes
-{
-    read[position++] = Wire.read();
-    if(position == 2) 
+byte readV[2];
+byte readC[2];
+
+while(Wire.available()) { //sends an int as two bytes
+
+if (position<2) {
+    readV[position] = Wire.read(); //recieves voltage value at j
+    position++;
+    } else {
+    readC[position-2] = Wire.read(); //recieves current value at j
+    position++
+    }
+    if(position == 4) 
     {
-        measurementV[j] = GetInt(read);
+        measurementV[j] = GetInt(readV); //assembles the measurments
+        measurementC[j] = GetInt(readC);
         break;
     }
    }
    if (j==255) {
-   hasMeasurementV=true;
+   hasMeasurement=true;
    }
   }
-  if(hasMeasurementV==true&&hasMeasurementC==true){
+  if(hasMeasurement==true){
   //Sends the measurment away
-  hasMeasurementV=false; 
-  hasMeasurementC=false; 
+  
+  Wire.beginTransmission(i); // transmit to device #1,2,3
+  Wire.write(1);              // sends one bit, 1 means reinitialize 
+  Wire.endTransmission();    // stop transmitting
+  
+  hasMeasurement=false; 
   }
   
 }
