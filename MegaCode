@@ -33,11 +33,10 @@ long value;
 byte read[2];
 while(Wire.available())
 {
-    read[position] = Wire.read();
-    position++;
+    read[position++] = Wire.read();
     if(position == 2) 
     {
-        measurment[j] = GetInt(read);
+        measurement[j] = GetInt(read);
         break;
     }
 }
