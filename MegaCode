@@ -20,6 +20,7 @@ for (int i = 1; i<=3; i++) {
 }
 
 For (int i = 1; i<=2; i++) {
+For (int j = 0; j<256; j++) {
 //  Wire.requestFrom(i, 256);    // request 6 bytes from slave device #2
 //j=0;
 //  while(Wire.available())    // slave may send less than requested
@@ -36,7 +37,7 @@ while(Wire.available())
     position++;
     if(position == 2) 
     {
-        measurment[i] = GetLong(read);
+        measurment[j] = GetInt(read);
         break;
     }
 }
