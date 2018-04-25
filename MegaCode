@@ -1,6 +1,7 @@
 int SCL = PD0;  //Clock pin
 int SDA = PD1;  //Data reciever pin
-
+int measurement[];
+int j=0;
 void setup() {
   Wire.begin(); 
 }
@@ -10,16 +11,42 @@ endDelay=0; //delay in ms
 clockDelay=500; //delay in ms
 
 void loop() {
-  delay(clockDelay);
-  Wire.beginTransmission(1); // transmit to device #1
-  Wire.write("collect");              // sends one byte
-  Wire.endTransmission();    // stop transmitting
 
+for (int i = 1; i<=3; i++) {
   delay(clockDelay);
-  Wire.beginTransmission(2); // transmit to device #2
-  Wire.write("collect");        // sends five bytes
+  Wire.beginTransmission(j); // transmit to device #1,2,3
+  Wire.write(i);              // sends one bit, 0 means initialize and 1 collect
   Wire.endTransmission();    // stop transmitting
-  
+}
+
+For (int i = 1; i<=2; i++) {
+//  Wire.requestFrom(i, 256);    // request 6 bytes from slave device #2
+//j=0;
+//  while(Wire.available())    // slave may send less than requested
+//  { 
+//    measurement[j] = Wire.read();    // receive a byte as character
+//j++;
+
+int position = 0;
+long value;
+byte read[2];
+while(Wire.available())
+{
+    read[position] = Wire.read();
+    position++;
+    if(position == 2) 
+    {
+        value = GetLong(read);
+        break;
+    }
+}
+
+
+
+  }
+}
+
   x++;
   delay(endDelay);
+
 }
