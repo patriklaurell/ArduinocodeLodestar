@@ -7,8 +7,8 @@ int duty[256]; //Array filled with values for how long the square part will be i
 int settlingTime = 3; //(in ms)
 int measurmentPause = 5000; //(in ms)
 int tracker = 0; //Keeping track of the current measurment series
-int32_t measuredV[256]; //Array storing the measured voltages for a series
-int32_t measuredA[256]; //Array storing the measured current for a series
+int measuredV[256]; //Array storing the measured voltages for a series
+int measuredA[256]; //Array storing the measured current for a series
 int readTime = 100; // in us
 int samples = 300; // number of saples per duty
 
