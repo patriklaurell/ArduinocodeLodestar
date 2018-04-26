@@ -1,3 +1,5 @@
+#include <Wire.h>
+
 int pinV = A1;  //Analog pin measuring voltage
 int pinA = A0;  //Analog pin measuring current
 int pinGate = 3; // digital pin controlling the gate voltage
@@ -17,7 +19,7 @@ void setup() {
  //Serial.begin(9600); 
  Wire.begin(1);
   Wire.onRequest(request);
-  Wire.onRecieve(event);
+  Wire.onReceive(event);
 
   for (int j = 0; j <= 255; j++) { // duty cycle of pwm wave.
     duty[j] = j;
@@ -57,26 +59,23 @@ void event(int howMany) {
     Serial.println(measuredA[j]);
     */
   }
-  
- 
+}
+
+
+void intToByte(int a, int b) {
+data[0]=highByte(a);
+data[1]=lowByte(a);
+data[2]=highByte(b);
+data[3]=lowByte(b);
+return;
 }
 
 void request() {
- data=IntToByte(measuredV[tracker],measuredA[tracker]);
+ intToByte(measuredV[tracker],measuredA[tracker]);
  tracker++;
  if (tracker==255){
  tracker=0;
  }
  Wire.write(data,4);
-
-
 }
 
-byte[] IntToByte(int a, int b) {
-byte[4] b;
-b[0]=highByte(a);
-b[1]=lowByte(a);
-b[2]=highByte(b);
-b[3]=lowByte(b);
-return b;
-}
