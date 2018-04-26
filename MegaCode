@@ -1,69 +1,79 @@
-int SCL = PD0;  //Clock pin
-int SDA = PD1;  //Data reciever pin
-int measurementV[];
-int measurementC[];
-Boolean hasMeasurement=false;
-void setup() {
-  Wire.begin(0); 
-  
-  for (int i = 1; i<=3; i++) {
-  delay(clockDelay);
-  Wire.beginTransmission(i); // transmit to device #1,2,3
-  Wire.write(1);              // sends one bit, 1 means initialize 
-  Wire.endTransmission();    // stop transmitting
-}
-}
+#include <Wire.h>
+
+int measurementV[256];
+int measurementC[256];
+boolean hasMeasurement = false;
 
 byte x = 0;
-endDelay=0; //delay in ms
-clockDelay=500; //delay in ms
+int endDelay = 0; //delay in ms
+int clockDelay = 500; //delay in ms
+
+
+void setup() {
+  Serial.begin(9600); // only for printing
+  Wire.begin();
+
+  for (int i = 1; i <= 3; i++) {
+    delay(clockDelay);
+    Wire.beginTransmission(i); // transmit to device #1,2,3
+    Wire.write(1);              // sends one bit, 1 means initialize
+    Wire.endTransmission();    // stop transmitting
+    delay(5000); //ms to prevent flooding the first nanos with recieve requests
+  }
+}
+
 
 void loop() {
 
+  for (int i = 1; i <= 2; i++) { //Reading from diffrent nanos
 
+    for (int j = 0; j < 256; j++) { //Recieves a measurmentV and a measurmentC array
 
-For (int i = 1; i<=2; i++) { //Reading from diffrent nanos
+      Wire.requestFrom(i, 4); // recieves one V and one C measurement 4 is for number of bytes
+      int position = 0;
+      byte readV[2];
+      byte readC[2];
 
-For (int j = 0; j<256; j++) { //sends measurmentV array
+      while (Wire.available()) { //sends an int as two bytes
 
-Wire.requestFrom(i,4); // recieves one V and one C measurement
-int position = 0;
-byte readV[2];
-byte readC[2];
-
-while(Wire.available()) { //sends an int as two bytes
-
-if (position<2) {
-    readV[position] = Wire.read(); //recieves voltage value at j
-    position++;
-    } else {
-    readC[position-2] = Wire.read(); //recieves current value at j
-    position++
+        if (position < 2) {
+          readV[position] = Wire.read(); //recieves voltage value at j
+          position++;
+        } else {
+          readC[position - 2] = Wire.read(); //recieves current value at j
+          position++;
+        }
+        if (position == 4)
+        {
+          measurementV[j] = getInt(readV); //assembles the measurments
+          measurementC[j] = getInt(readC);
+          break;
+        }
+      }
+      if (j == 255) {
+        hasMeasurement = true;
+      }
     }
-    if(position == 4) 
-    {
-        measurementV[j] = GetInt(readV); //assembles the measurments
-        measurementC[j] = GetInt(readC);
-        break;
+    if (hasMeasurement == true) {
+
+        Serial.println(measurementV[0]);
+        Serial.println(measurementC[0]);
+      //Sends the measurment away
+
+      Wire.beginTransmission(i); // transmit to device #1,2,3
+      Wire.write(1);              // sends one bit, 1 means reinitialize
+      Wire.endTransmission();    // stop transmitting
+      hasMeasurement = false;
     }
-   }
-   if (j==255) {
-   hasMeasurement=true;
-   }
+    x++;
+    delay(endDelay);
   }
-  if(hasMeasurement==true){
-  //Sends the measurment away
-  
-  Wire.beginTransmission(i); // transmit to device #1,2,3
-  Wire.write(1);              // sends one bit, 1 means reinitialize 
-  Wire.endTransmission();    // stop transmitting
-  
-  hasMeasurement=false; 
-  }
-  
 }
 
-  x++;
-  delay(endDelay);
-
+// function converts an array of two bytes into an int
+int getInt (byte B[]) {
+  int first = 2 ^ 4 * (int)(B[0]);
+  int second = (int)(B[1]);
+  return first + second;
 }
+
