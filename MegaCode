@@ -3,33 +3,55 @@
 int measurementV[256];
 int measurementC[256];
 boolean hasMeasurement = false;
+int radCount = 0;
+boolean radFlag = false;
+boolean flag = true;
 
 byte x = 0;
 int endDelay = 0; //delay in ms
-int clockDelay = 500; //delay in ms
+int clockDelay = 0; //delay in ms
 
 
 void setup() {
   Serial.begin(9600); // only for printing
   Wire.begin();
 
-  for (int i = 1; i <= 3; i++) {
-    delay(clockDelay);
-    Wire.beginTransmission(i); // transmit to device #1,2,3
-    Wire.write(1);              // sends one bit, 1 means initialize
-    Wire.endTransmission();    // stop transmitting
-    delay(5000); //ms to prevent flooding the first nanos with recieve requests
-  }
+  //for (int i = 1; i <= 1; i++) {
+   //delay(clockDelay);
+   //Wire.beginTransmission(i); // transmit to device #1,2,3
+   //Wire.write(1);              // sends one bit, 1 means initialize
+   //Wire.endTransmission();    // stop transmitting
+    //delay(0); //ms to prevent flooding the first nanos with recieve requests
+ // }
 }
 
 
 void loop() {
 
-  for (int i = 1; i <= 2; i++) { //Reading from diffrent nanos
+  for (int i = 1; i <= 1; i++) { //Reading from diffrent nanos
+Serial.println(i);
 
+    Serial.println("ur");
+    flag=true;
+    while (flag){
+    Wire.requestFrom(1, 1); 
+    if(Wire.read()=='0'){
+    Serial.println("stop");
+    delay(10000);
+    } else {
+    Serial.println("else");
+    flag=false;
+    }
+    }
+    Serial.println("cont");
+
+    
     for (int j = 0; j < 256; j++) { //Recieves a measurmentV and a measurmentC array
-
+      Serial.println("loop");
+      delay(10);
       Wire.requestFrom(i, 4); // recieves one V and one C measurement 4 is for number of bytes
+      delay(10);
+      Serial.println(j);
       int position = 0;
       byte readV[2];
       byte readC[2];
@@ -54,7 +76,9 @@ void loop() {
         hasMeasurement = true;
       }
     }
+    delay(1000);
     if (hasMeasurement == true) {
+        Serial.println("Z");
 
         Serial.println(measurementV[0]);
         Serial.println(measurementC[0]);
@@ -68,12 +92,31 @@ void loop() {
     x++;
     delay(endDelay);
   }
+  
+   Wire.requestFrom(3, 2); // recieves one int from UNO
+   byte readR[2];
+   int position = 0;
+   
+         while (Wire.available()) { //sends an int as two bytes
+          readR[position]=Wire.read();
+          position++;
+          if (position==2){
+            radCount=getInt(readR);
+            radFlag=true;
+          }
+         }
+
+         //send radcount
+         //radFlag=false
 }
 
 // function converts an array of two bytes into an int
 int getInt (byte B[]) {
   int first = 2 ^ 4 * (int)(B[0]);
   int second = (int)(B[1]);
+  Serial.println("first");
+  Serial.println(first);
+  Serial.println(second);
   return first + second;
 }
 
