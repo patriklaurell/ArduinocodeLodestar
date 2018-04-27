@@ -59,10 +59,10 @@ void loop() {
       Serial.println("klar");
     }
     while(flag){
-      delay(100);
     }
     
     tracker1++;
+    
   }
 }
 
@@ -76,11 +76,7 @@ return;
 }
 
 void request() {
-  Serial.println(check);
-  Serial.println(tracker);
-  Serial.println(flag);
  if(flag && tracker==-1){
- Serial.println("check");
  check=true;
  tracker++;
  Wire.write('1');
@@ -89,8 +85,6 @@ void request() {
   Wire.write('0');
  }
  if(check && tracker>=0){
- Serial.print(tracker);
- Serial.println(" sent");
  intToByte(measuredV[tracker],measuredA[tracker]);
  tracker++;
  if (tracker==255){
@@ -98,7 +92,6 @@ void request() {
  check=false;
  }
  Wire.write(data,4);
- 
 }
 }
 
