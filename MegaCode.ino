@@ -8,13 +8,13 @@ boolean hasMeasurement = false;
 int radCount = 0;
 boolean radFlag = false;
 
-byte measurement_number = 0;
+byte measurement_nr = 0;
 int endDelay = 0; //delay in ms
 int clockDelay = 0; //delay in ms
 
 // Define ground commands
-const int GND_CMD_GEIGER_OFF = 0
-const int GND_CMD_GEIGER_ON = 1
+const int GND_CMD_GEIGER_OFF = 0;
+const int GND_CMD_GEIGER_ON = 1;
 
 void setup() {
   Serial.begin(9600); // only for printing
@@ -50,7 +50,8 @@ void get_radiation_data() {
    read from nano i
 */
 void populate_data_arrays(int i) {
-  Serial.printf("Reading data from nano %d", i);
+  Serial.print("Reading data from nano");
+  Serial.print(i);
   byte c = 100;
   Wire.requestFrom(i, 1);
   while(Wire.available()){    // slave may send less than requeste   
@@ -85,7 +86,9 @@ void populate_data_arrays(int i) {
       if (position == 4) {
         measurementV[j] = getInt(readV); //assembles the measurments
         measurementC[j] = getInt(readC);
-        Serial.printf("V=%d,\tC=%d", measurementV[j], measurementC[j]);
+        char* s;
+        sprintf(s,"V=%d,\tC=%d", measurementV[j], measurementC[j]);
+        Serial.print(s);
         break;
       }
     }
