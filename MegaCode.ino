@@ -25,68 +25,98 @@ void setup() {
 }
 
 
+
+void get_radiation_data() {
+  Wire.requestFrom(3, 2); // recieves one int from UNO
+  byte readR[2];
+  int position = 0;
+
+  while (Wire.available()) { //sends an int as two bytes
+    readR[position]=Wire.read();
+    position++;
+    if (position==2){
+      radCount=getInt(readR);
+      radFlag=true;
+    }
+  }
+}
+
+/*
+   read from nano i
+*/
+void populate_data_arrays(int i) {
+  Serial.printf("Reading data from nano %d", i);
+  byte c = 100;
+  Wire.requestFrom(i, 1);
+  while(Wire.available()){    // slave may send less than requeste   
+    c=Wire.read();
+  }
+  byte value = 1; //if we read a 1 the series is ready for transmission
+  while (c!=value){
+    Serial.println(c);
+    delay(2000);
+    Wire.requestFrom(i, 1);
+    while(Wire.available()){    // slave may send less than requeste   
+      c=Wire.read(); 
+    }
+  }
+  Serial.println("cont");
+
+  // Read data when nano is ready
+  for (int j = 0; j < 256; j++) { //Recieves a measurmentV and a measurmentC array
+    int position = 0;
+    byte readV[2];
+    byte readC[2];
+
+    Wire.requestFrom(i, 4); // recieves one V and one C measurement 4 is for number of bytes
+    while (Wire.available()) { //sends an int as two bytes
+      if (position < 2) {
+        readV[position] = Wire.read(); //recieves voltage value at j
+        position++;
+      } else {
+        readC[position - 2] = Wire.read(); //recieves current value at j
+        position++;
+      }
+      if (position == 4) {
+        measurementV[j] = getInt(readV); //assembles the measurments
+        measurementC[j] = getInt(readC);
+        Serial.printf("V=%d,\tC=%d", measurementV[j], measurementC[j]);
+        break;
+      }
+    }
+    if (j == 255) {
+      hasMeasurement = true;
+    }
+  }
+}
+
+// function converts an array of two bytes into an int
+int getInt (byte B[]) {
+  int first = (2 ^ 8) * (int)(B[0]);
+  int second = (int)(B[1]);
+  //Serial.println("first");
+  //Serial.println(first);
+  //Serial.println(second);
+  return first + second;
+}
+
 void loop() {
   //change to 2 in second argument later
   for (int i = 1; i <= 1; i++) { //Reading from diffrent nanos
-    Serial.println(i);
-    byte c = 100;
-    Wire.requestFrom(1, 1);
-    while(Wire.available()){    // slave may send less than requeste   
-      c=Wire.read();
-      Serial.println("hej");
-    }
-    byte value = 1; //if we read a 1 the series is ready for transmission
-    while (c!=value){
-      Serial.println(c);
-      delay(2000);
-      Wire.requestFrom(1, 1);
-      while(Wire.available()){    // slave may send less than requeste   
-        c=Wire.read(); 
-      }
-    }
-    Serial.println("cont");
 
+    // populate measurment arrays
+    populate_data_arrays(i);
 
-    for (int j = 0; j < 256; j++) { //Recieves a measurmentV and a measurmentC array
-      Serial.println("loop");
-      Serial.println(j);
+    // get radiation data
+    get_radiation_data();
 
-      delay(10);
-      int position = 0;
-      byte readV[2];
-      byte readC[2];
+    // get temp data
+    get_temp_data();
 
-      Wire.requestFrom(i, 4); // recieves one V and one C measurement 4 is for number of bytes
-      int f=0;
+    // get pressure data
+    get_pressure_data();
 
-      while (Wire.available()) { //sends an int as two bytes
-        f++;
-        if (position < 2) {
-          readV[position] = Wire.read(); //recieves voltage value at j
-
-
-          position++;
-        } else {
-          readC[position - 2] = Wire.read(); //recieves current value at j
-          position++;
-        }
-        if (position == 4)
-        {
-          measurementV[j] = getInt(readV); //assembles the measurments
-          measurementC[j] = getInt(readC);
-          Serial.println("Measurment values");
-          Serial.println(measurementV[j]);
-          Serial.println(measurementC[j]);
-          break;
-        }
-      }
-      Serial.println("number of loops");
-      Serial.println(f);
-      if (j == 255) {
-        hasMeasurement = true;
-      }
-    }
-    delay(1000);
+    // TODO: Send data to ground
     if (hasMeasurement == true) {
       Serial.println("Z");
 
@@ -103,32 +133,10 @@ void loop() {
     delay(endDelay);
   }
 
-  Wire.requestFrom(3, 2); // recieves one int from UNO
-  byte readR[2];
-  int position = 0;
-
-  while (Wire.available()) { //sends an int as two bytes
-    readR[position]=Wire.read();
-    position++;
-    if (position==2){
-      radCount=getInt(readR);
-      radFlag=true;
-    }
-  }
 
   //send radcount
   //radFlag=false
 
   //temp/preassure measurment?
-}
-
-// function converts an array of two bytes into an int
-int getInt (byte B[]) {
-  int first = (2 ^ 8) * (int)(B[0]);
-  int second = (int)(B[1]);
-  //Serial.println("first");
-  //Serial.println(first);
-  //Serial.println(second);
-  return first + second;
 }
 
