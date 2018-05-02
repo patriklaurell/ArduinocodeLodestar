@@ -2,14 +2,19 @@
 
 int measurementV[256];
 int measurementC[256];
+int temp;
+int pressure;
 boolean hasMeasurement = false;
 int radCount = 0;
 boolean radFlag = false;
 
-byte x = 0;
+byte measurement_number = 0;
 int endDelay = 0; //delay in ms
 int clockDelay = 0; //delay in ms
 
+// Define ground commands
+const int GND_CMD_GEIGER_OFF = 0
+const int GND_CMD_GEIGER_ON = 1
 
 void setup() {
   Serial.begin(9600); // only for printing
@@ -100,38 +105,83 @@ int getInt (byte B[]) {
   return first + second;
 }
 
-void loop() {
-  //change to 2 in second argument later
-  for (int i = 1; i <= 1; i++) { //Reading from diffrent nanos
+void get_temp_data() {
+  temp += 1;
+}
 
-    // populate measurment arrays
-    populate_data_arrays(i);
+void get_pressure_data() {
+  pressure += 1;
+}
 
-    // get radiation data
-    get_radiation_data();
-
-    // get temp data
-    get_temp_data();
-
-    // get pressure data
-    get_pressure_data();
-
-    // TODO: Send data to ground
-    if (hasMeasurement == true) {
-      Serial.println("Z");
-
-      Serial.println(measurementV[0]);
-      Serial.println(measurementC[0]);
-      //Sends the measurment away
-
-      //Wire.beginTransmission(i); // transmit to device #1,2,3
-      //Wire.write(1);              // sends one bit, 1 means reinitialize
-      //Wire.endTransmission();    // stop transmitting
-      hasMeasurement = false;
-    }
-    x++;
-    delay(endDelay);
+int handle_ground_command(char command) 
+{
+  switch (command) {
+    case GND_CMD_GEIGER_OFF:
+      // turn off geiger tube
+      break;
+    case GND_CMD_GEIGER_ON:
+      // Turn on geiger tube
+      break;
   }
+}
+
+void loop() {
+  /*
+     Handle ground commands
+  */
+
+  /*
+  char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    // Read content of UDP package into packetBuffer
+    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+
+    // Define commands
+  
+    // Handle ground command
+    char command = packetBuffer[0];
+    handle_ground_command(command);
+  }
+  */
+
+  /*
+     Read measurement data
+  */
+  populate_data_arrays(measurement_nr % 2 + 1);
+  // get radiation data
+  get_radiation_data();
+  // get temp data
+  get_temp_data();
+  // get pressure data
+  get_pressure_data();
+
+
+  /*
+     Send data to ground
+  */
+  if (hasMeasurement == true) {
+    Serial.println("Z");
+
+    Serial.println(measurementV[0]);
+    Serial.println(measurementC[0]);
+    //Sends the measurment away
+
+    //Wire.beginTransmission(i); // transmit to device #1,2,3
+    //Wire.write(1);              // sends one bit, 1 means reinitialize
+    //Wire.endTransmission();    // stop transmitting
+    hasMeasurement = false;
+  }
+  measurement_nr++;
+  delay(endDelay);
+
+
+  /*
+     Write data to SD-card
+  */
 
 
   //send radcount
