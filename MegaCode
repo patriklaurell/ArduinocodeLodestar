@@ -33,6 +33,7 @@ Serial.println(i);
     Wire.requestFrom(1, 1);
     while(Wire.available()){    // slave may send less than requeste   
     c=Wire.read();
+    Serial.println("hej");
     }
     byte value = 1; //if we read a 1 the series is ready for transmission
     while (c!=value){
@@ -48,16 +49,18 @@ Serial.println(i);
     
     for (int j = 0; j < 256; j++) { //Recieves a measurmentV and a measurmentC array
       Serial.println("loop");
+      Serial.println(j);
+      
       delay(10);
       int position = 0;
       byte readV[2];
       byte readC[2];
 
       Wire.requestFrom(i, 4); // recieves one V and one C measurement 4 is for number of bytes
-  
+      int f=0;
 
       while (Wire.available()) { //sends an int as two bytes
-
+        f++;
         if (position < 2) {
           readV[position] = Wire.read(); //recieves voltage value at j
                
@@ -71,9 +74,14 @@ Serial.println(i);
         {
           measurementV[j] = getInt(readV); //assembles the measurments
           measurementC[j] = getInt(readC);
+          Serial.println("Measurment values");
+          Serial.println(measurementV[j]);
+          Serial.println(measurementC[j]);
           break;
         }
       }
+      Serial.println("number of loops");
+      Serial.println(f);
       if (j == 255) {
         hasMeasurement = true;
       }
@@ -110,15 +118,17 @@ Serial.println(i);
 
          //send radcount
          //radFlag=false
+
+         //temp/preassure measurment?
 }
 
 // function converts an array of two bytes into an int
 int getInt (byte B[]) {
-  int first = 2 ^ 4 * (int)(B[0]);
+  int first = (2 ^ 8) * (int)(B[0]);
   int second = (int)(B[1]);
-  Serial.println("first");
-  Serial.println(first);
-  Serial.println(second);
+  //Serial.println("first");
+  //Serial.println(first);
+  //Serial.println(second);
   return first + second;
 }
 
