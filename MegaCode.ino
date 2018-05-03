@@ -1,4 +1,6 @@
 #include <Wire.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
 
 int measurementV[256];
 int measurementC[256];
@@ -16,6 +18,14 @@ int clockDelay = 0; //delay in ms
 const int GND_CMD_GEIGER_OFF = 0;
 const int GND_CMD_GEIGER_ON = 1;
 
+// Constants for UDP connection
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+IPAddress ip(192, 168, 1, 177);
+unsigned int localPort = 8888;      // local port to listen on
+EthernetUDP Udp;
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
+
+
 void setup() {
   Serial.begin(9600); // only for printing
   Wire.begin();
@@ -27,6 +37,9 @@ void setup() {
   //Wire.endTransmission();    // stop transmitting
   //delay(0); //ms to prevent flooding the first nanos with recieve requests
   // }
+
+  Ethernet.begin(mac, ip);
+  Udp.begin(localPort);
 }
 
 
@@ -128,28 +141,24 @@ int handle_ground_command(char command)
   }
 }
 
+
 void loop() {
   /*
      Handle ground commands
   */
-
-  /*
   char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
-
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     // Read content of UDP package into packetBuffer
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     Serial.println("Contents:");
     Serial.println(packetBuffer);
-
-    // Define commands
   
-    // Handle ground command
+    // Handle command
     char command = packetBuffer[0];
     handle_ground_command(command);
   }
-  */
+
 
   /*
      Read measurement data
@@ -166,20 +175,6 @@ void loop() {
   /*
      Send data to ground
   */
-  if (hasMeasurement == true) {
-    Serial.println("Z");
-
-    Serial.println(measurementV[0]);
-    Serial.println(measurementC[0]);
-    //Sends the measurment away
-
-    //Wire.beginTransmission(i); // transmit to device #1,2,3
-    //Wire.write(1);              // sends one bit, 1 means reinitialize
-    //Wire.endTransmission();    // stop transmitting
-    hasMeasurement = false;
-  }
-  measurement_nr++;
-  delay(endDelay);
 
 
   /*
@@ -187,9 +182,7 @@ void loop() {
   */
 
 
-  //send radcount
-  //radFlag=false
-
-  //temp/preassure measurment?
+  measurement_nr++;
+  delay(endDelay);
 }
 
