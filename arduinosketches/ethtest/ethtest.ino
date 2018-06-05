@@ -1,238 +1,79 @@
-/*
- UDPSendReceiveString:
- This sketch receives UDP message strings, prints them to the serial port
- and sends an "acknowledge" string back to the sender
-
- A Processing sketch is included at the end of file that can be used to send
- and received messages for testing with a computer.
-
- created 21 Aug 2010
- by Michael Margolis
-
- This code is in the public domain.
- */
-
-
-#include <SPI.h>         // needed for Arduino versions later than 0018
 #include <Ethernet.h>
-#include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
-#include <string.h>
+#include <SPI.h>
+#include <EthernetUdp.h>
 #include <SD.h>
 
-// Define general constants
-const char MEASUREMENT_ARRAY_LEN = 10;
+#define REMOTE_PORT    8888
+#define LOCAL_PORT     8888
 
-const char GND_CMD_GEIGER_OFF = 0;
-const char GND_CMD_GEIGER_ON = 1;
-const char GND_CMD_TRANS_OFF = 2;
-const char GND_CMD_TRANS_ON = 3;
+// These depends on which arduino in in use.
+#define SD_SS_PIN         4
+#define ETHERNET_SS_PIN  10
+#define DATA_BUFFER_LEN  10
 
-short measurementV[MEASUREMENT_ARRAY_LEN];
-short measurementC[MEASUREMENT_ARRAY_LEN];
-int temp = 0;
-int pressure = 0;
-int radCount = 0;
-
-byte measurement_count = 0;
-int endDelay = 0; //delay in ms
-int clockDelay = 0; //delay in ms
-
-
-// Enter a MAC address and IP address for your controller below.
-// The IP address will be dependent on your local network:
-byte mac[] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
-};
-IPAddress ip(192, 168, 0, 200);
-IPAddress remoteIp(192, 168, 0, 3);
-
-unsigned int localPort = 8888;      // local port to listen on
-
-// buffers for receiving and sending data
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  //buffer to hold incoming packet,
-char  ReplyBuffer[] = "acknowledged";       // a string to send back
-
-// An EthernetUDP instance to let us send and receive packets over UDP
+// ---- Things for ethernet ---- //
 EthernetUDP Udp;
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+IPAddress remoteIP(192, 168, 0, 2);
+IPAddress localIP(192, 168, 0, 200);
 
-void setup() {
-  // start the Ethernet and UDP:
-  Ethernet.begin(mac, ip);
-  Udp.begin(localPort);
-  Serial.println("Set up UDP");
+// -------- Data stuff -------- //
+uint16_t voltageBuffer1[DATA_BUFFER_LEN];
+uint16_t currentBuffer1[DATA_BUFFER_LEN];
+uint16_t voltageBuffer2[DATA_BUFFER_LEN];
+uint16_t currentBuffer2[DATA_BUFFER_LEN];
+uint8_t  formatedData[DATA_BUFFER_LEN*4];
 
-  // Setup SD-card
-  Serial.print("Initializing SD card...");
-  // see if the card is present and can be initialized:
-  if (!SD.begin()) {
-    Serial.println("Card failed, or not present");
-    // don't do anything more:
-    while (1);
-  }
-  Serial.println("card initialized.");
-
-  Serial.begin(9600);
+void initEthernet()
+{
+    Ethernet.begin(mac, localIP);
+    Udp.begin(LOCAL_PORT);
 }
 
-
-
-byte* formatDataArray() {
-  byte data[MEASUREMENT_ARRAY_LEN*4];
-  for (int i=0; i<MEASUREMENT_ARRAY_LEN; i++) {
-    data[i*2] = highByte(measurementC[i]);
-    data[i*2 + 1] = lowByte(measurementC[i]);
-    data[i*2 + 2] = highByte(measurementV[i]);
-    data[i*2 + 3] = lowByte(measurementV[i]);
-  }
-  return data;
-}
-
-void emmulateDataArrays() {
-  for (int i=0; i<MEASUREMENT_ARRAY_LEN; i++) {
-    measurementV[i] = i;
-    measurementC[i] = i;
-  }
-}
-
-int recievePacket(char* packetBuffer, int bufferSize) {
-  /*
-  Serial.print("Received packet of size: ");
-  Serial.println(packetSize);
-  Serial.print("From: ");
-  IPAddress remote = Udp.remoteIP();
-  for (int i = 0; i < 4; i++) {
-    Serial.print(remote[i], DEC);
-    if (i < 3) {
-      Serial.print(".");
+void initSDCard()
+{
+    if(!SD.begin(SD_SS_PIN))
+    {
+        Serial.println("Failed initializing SD-card.");
+        while(1){}
     }
-  }
-  Serial.print(", port: ");
-  Serial.println(Udp.remotePort());
-  */
-  // read the packet into packetBufffer
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    memset(packetBuffer, 0, bufferSize);
-    Udp.read(packetBuffer, bufferSize);
+}
 
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer);
+void writeToSD()
+{
+    File dataFile = SD.open("data", FILE_WRITE);
+    Serial.println(dataFile.write(formatedData, DATA_BUFFER_LEN*4));
+}
+
+void formatData()
+{
+    Serial.println("Formating...");
+    formatedData[0] = (uint8_t) (millis()/1000);
+    Serial.println(formatedData[0]);
+    for(int i = 1; i < DATA_BUFFER_LEN; i++)
+    {
+        formatedData[i] = voltageBuffer1[i];
+        formatedData[DATA_BUFFER_LEN+i] = currentBuffer1[i];
+        formatedData[2*DATA_BUFFER_LEN+i] = voltageBuffer2[i];
+        formatedData[3*DATA_BUFFER_LEN+i] = currentBuffer2[i];
+    }
+}
+
+void setup()
+{
+    Serial.begin(9600);
+    initEthernet();
+    initSDCard();
+}
+
+
+void loop()
+{
+    Udp.beginPacket(remoteIP, REMOTE_PORT);
+    Udp.write("Hello");
     Udp.endPacket();
-
-    return 1;
-  }
-  return 0;
+    delay(1000);
+    formatData();
+    writeToSD();
 }
-
-void handleGroundCommands(char* packet) {
-  int command = atoi(packet);
-  Serial.print("Recieved command: ");
-
-  switch (command) {
-    case GND_CMD_GEIGER_OFF:
-      Serial.println("GEIGER_OFF");
-      break;
-    case GND_CMD_GEIGER_ON:
-      Serial.println("GEIGER_ON");
-      break;
-  }
-}
-
-void sendData(byte* data, int dataSize, IPAddress remoteIp, int port) {
-  Serial.println("Sending data");
-  Udp.beginPacket(remoteIp, port);
-  Udp.write(data, dataSize);
-  Udp.endPacket();
-}
-
-
-void loop() {
-  /*
-   *  Recieve and handle ground commands
-   */
-  // if there's data available, read a packet
-  int newPacket = recievePacket(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-  // if new packet handle commands
-  if (newPacket) {
-    handleGroundCommands(packetBuffer);  
-  }
-
-
-  /*
-   *  Fill up data arrays with measurements
-   */
-  //populate_data_arrays(measurement_count % 2 + 1);
-  emmulateDataArrays();
- 
-
-  /* 
-   *  Format data
-   */
-  byte* data = formatDataArray();
-
-  /*
-   *  Send data to ground
-   */
-  // sendData(data, 4*MEASUREMENT_ARRAY_LEN, remoteIp, 8888);
-
-  /*
-   *  Save data to SD-card
-   */
-  char* filename = "data2.txt";
-  File dataFile = SD.open(filename, FILE_WRITE);
-  if (dataFile) {
-    Serial.println("Writing data to file...");
-    int i = dataFile.write(data, 40);
-    Serial.print(i);
-    Serial.println(" bytes written");
-    dataFile.close();
-  }
-  else { // if the file isn't open, pop up an error:
-    Serial.print("error opening ");
-    Serial.println(filename);
-  }
-  
-  
-  delay(2000);
-}
-
-
-/*
-  Processing sketch to run with this example
- =====================================================
-
- // Processing UDP example to send and receive string data from Arduino
- // press any key to send the "Hello Arduino" message
-
-
- import hypermedia.net.*;
-
- UDP udp;  // define the UDP object
-
-
- void setup() {
- udp = new UDP( this, 6000 );  // create a new datagram connection on port 6000
- //udp.log( true );         // <-- printout the connection activity
- udp.listen( true );           // and wait for incoming message
- }
-
- void draw()
- {
- }
-
- void keyPressed() {
- String ip       = "192.168.1.177"; // the remote IP address
- int port        = 8888;        // the destination port
-
- udp.send("Hello World", ip, port );   // the message to send
-
- }
-
- void receive( byte[] data ) {          // <-- default handler
- //void receive( byte[] data, String ip, int port ) {   // <-- extended handler
-
- for(int i=0; i < data.length; i++)
- print(char(data[i]));
- println();
- }
- */
+    
