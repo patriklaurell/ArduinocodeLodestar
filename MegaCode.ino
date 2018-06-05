@@ -1,20 +1,25 @@
 #include <Wire.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#include <SPI.h>
+#include <SD.h>
 
-int measurementV[256];
-int measurementC[256];
+// Define general constants
+const int MEASUREMENT_ARRAY_LEN = 256;
+
+short measurementV[256];
+short measurementC[256];
 int temp;
 int pressure;
 boolean hasMeasurement = false;
 int radCount = 0;
 boolean radFlag = false;
 
-byte measurement_nr = 0;
+byte measurement_count = 0;
 int endDelay = 0; //delay in ms
 int clockDelay = 0; //delay in ms
 
-// Define ground commands
+// Define ground command constants
 const int GND_CMD_GEIGER_OFF = 0;
 const int GND_CMD_GEIGER_ON = 1;
 
@@ -25,6 +30,8 @@ unsigned int localPort = 8888;      // local port to listen on
 EthernetUDP Udp;
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
 
+// SD-card file
+File dataFile;
 
 void setup() {
   Serial.begin(9600); // only for printing
@@ -38,8 +45,23 @@ void setup() {
   //delay(0); //ms to prevent flooding the first nanos with recieve requests
   // }
 
+
+  // Setup UDP
   Ethernet.begin(mac, ip);
   Udp.begin(localPort);
+
+  // Setup SD-card
+  Serial.print("Initializing SD card...");
+  // see if the card is present and can be initialized:
+  if (!SD.begin()) {
+    Serial.println("Card failed, or not present");
+    // don't do anything more:
+    while (1);
+  }
+  Serial.println("card initialized.");
+
+  // Setup SD-card
+  dataFile = SD.open("datalog.txt", FILE_WRITE);
 }
 
 
@@ -141,11 +163,29 @@ int handle_ground_command(char command)
   }
 }
 
+String format_data_string() {
+  String s = "";
+  for (int i=0; i<MEASUREMENT_ARRAY_LEN; i++) {
+    s += measurementC[i] + "," + measurementV[i];
+  }
+}
+
+void emmulate_data_arrays() {
+  for (int i=0; i<256; i++) {
+    measurementV[i] = i;
+    measurementC[i] = i;
+  }
+}
+
+void emmulate_rad_data() {
+  radCount = 12;
+}
 
 void loop() {
   /*
      Handle ground commands
   */
+  /*
   char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
   int packetSize = Udp.parsePacket();
   if (packetSize) {
@@ -158,18 +198,41 @@ void loop() {
     char command = packetBuffer[0];
     handle_ground_command(command);
   }
+  */
 
 
   /*
      Read measurement data
   */
-  populate_data_arrays(measurement_nr % 2 + 1);
+  //populate_data_arrays(measurement_count % 2 + 1);
+  emmulate_data_arrays();
   // get radiation data
-  get_radiation_data();
+  //get_radiation_data();
+  emmulate_rad_data();
   // get temp data
   get_temp_data();
   // get pressure data
   get_pressure_data();
+
+  
+  /*
+     Format data to string
+  */
+  String dataString = format_data_string();
+
+
+  /*
+     Write data to SD-card
+  */
+  if (dataFile) {
+    dataFile.println(dataString);
+    dataFile.close();
+    // print to the serial port too:
+    Serial.println(dataString);
+  }
+  else {// if the file isn't open, pop up an error:
+    Serial.println("error opening datalog.txt");
+  }
 
 
   /*
@@ -177,12 +240,7 @@ void loop() {
   */
 
 
-  /*
-     Write data to SD-card
-  */
-
-
-  measurement_nr++;
+  measurement_count++;
   delay(endDelay);
 }
 
