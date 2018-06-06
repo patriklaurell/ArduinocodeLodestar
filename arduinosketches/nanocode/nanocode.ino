@@ -2,102 +2,89 @@
 
 #define VOLTAGE_PIN         A1
 #define CURRENT_PIN         A0
+#define ADDRESS              1
 #define GATE_VOLTAGE_PIN     3
+#define CIGS_DATA_LEN       20
 
-//int period = 256; // Period time for a square sequence
-int duty[256];      // Array filled with values for how long 
-                    // the square part will be in the pulse.
 int tracker1   = 0;
 int tracker   = -1; //Keeping track of the current sent data series
 int measuredV[256]; //Array storing the measured voltages for a series
 int measuredA[256]; //Array storing the measured current for a series
 byte data[4];
-boolean flag=false;
-boolean check=false;
+bool allowMeasurement = true;
 
 void setup()
 {
     Serial.begin(9600); 
-    Wire.begin(1);
+    pinMode(LED_BUILTIN, OUTPUT);
+    Wire.begin(ADDRESS);
     Wire.onRequest(request);
-    // Wire.onReceive(event);
-
-    // Duty cycle of pwm wave.
-    for (int j = 0; j <= 255; j++) 
-    {
-        duty[j] = j;
-    }
 }
 
 void loop()
 {
-    //void event(int howMany) {
     Serial.print("Measurment series ");
     Serial.print(tracker1);
     Serial.println(" initiated");
-
+    
+    cli(); 
+    digitalWrite(LED_BUILTIN, HIGH);
     for (int j = 0; j <= 255; j++)
     {
-        analogWrite(GATE_VOLTAGE_PIN, duty[j]); //Creates square waves with the current duty
-        delay(3); //Circuit is allowed to enter steadystate
+        analogWrite(GATE_VOLTAGE_PIN, j); //Creates square waves with the current duty
+        delay(3);                         //Circuit is allowed to enter steadystate
 
-        //int32_t averageV = 0;
-        //int32_t averageA = 0;
         int averageV = 0;
         int averageA = 0;
 
         for (int i = 0; i < 300; i++) 
         {
-            averageV += analogRead(VOLTAGE_PIN); //Measures V
-            averageA += analogRead(CURRENT_PIN); //Measures A
-            delayMicroseconds(100); //Prevents interferance when measuring  
+            averageV += analogRead(VOLTAGE_PIN); //Measures voltage.
+            averageA += analogRead(CURRENT_PIN); //Measures current.
+            delayMicroseconds(100);              //Prevents interferance.  
         }
         measuredV[j] = averageV/300;
         measuredA[j] = averageA/300;
 
-        Serial.println(j);
-        if(j == 255)
-        {
-            flag = true;
-            Serial.println("klar");
-        }
-        while(flag){}
-        tracker1++;
     }
-}
-
-
-void intToByte(int a, int b) 
-{
-    data[0]=highByte(a);
-    data[1]=lowByte(a);
-    data[2]=highByte(b);
-    data[3]=lowByte(b);
-    return;
+    Serial.println("Done makeing measurment.");
+    digitalWrite(LED_BUILTIN, LOW);
+    sei();
+    allowMeasurement = false;
+    while(!allowMeasurement)
+    {
+        delay(100);
+    }
 }
 
 void request()
 {
-    if(flag && tracker==-1)
+    // TODO: Make this shorter.
+    Serial.println("Received request from master");
+    uint8_t dataToSend[2*CIGS_DATA_LEN];
+    
+    // Splitting voltage data into bytes
+    // and stores it into dataToSend. 
+    int index = 0;
+    for (int i = 0; i < CIGS_DATA_LEN; i++)
     {
-        check=true;
-        tracker++;
-        Wire.write('1');
+        dataToSend[index]  = highByte(measuredV[i]);
+        index++;
+        dataToSend[index] = lowByte(measuredV[i]);
+        index++;
     }
-    else if(!check)
+
+    // Splitting current data into bytes
+    // and stores it into dataToSend. 
+    for (int i = 0; i < CIGS_DATA_LEN; i++)
     {
-        Wire.write('0');
+        dataToSend[index]  = highByte(measuredA[i]);
+        index++;
+        dataToSend[index] = lowByte(measuredA[i]);
+        index++;
     }
-    if(check && tracker>=0)
-    {
-        intToByte(measuredV[tracker],measuredA[tracker]);
-        tracker++;
-        if (tracker==255)
-        {
-            tracker=-1;
-            check=false;
-        }
-        Wire.write(data,4);
-    }
+    Wire.write(dataToSend, 2*CIGS_DATA_LEN);
+    allowMeasurement = true;
+    tracker1++;
 }
 
