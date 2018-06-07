@@ -12,7 +12,7 @@
 #define ETHERNET_SS_PIN  10
 #define NANO_1_ADDRESS 0x01 
 #define NANO_2_ADDRESS 0x02 
-#define CIGS_DATA_LEN    20
+#define CIGS_DATA_LEN    40
 
 // ---- Things for ethernet ---- //
 EthernetUDP Udp;
@@ -24,12 +24,10 @@ IPAddress localIP(192, 168, 0, 200);
 File dataFile;
 uint8_t timeStamp[2];
 uint8_t frameNumber[2];
-uint8_t voltageBuffer1[CIGS_DATA_LEN];
-uint8_t currentBuffer1[CIGS_DATA_LEN];
-uint8_t voltageBuffer2[CIGS_DATA_LEN];
-uint8_t currentBuffer2[CIGS_DATA_LEN];
 uint8_t radiation[2];
 uint8_t temperature[2];
+uint8_t cigsData1[CIGS_DATA_LEN];
+uint8_t cigsData2[CIGS_DATA_LEN];
 uint8_t formatedData[CIGS_DATA_LEN*4+7];
 
 // Initializes the ethernet interface.
@@ -69,37 +67,66 @@ void setTimeStamp()
 }
 
 // Request CIGS data from a slace device. Returns false is slave is busy.
-bool getCigsData(int device)
+bool getCigsData(int slave)
 {
-    uint8_t index = 0;
     Serial.print("Requesting data from device ");
-    Serial.println(device); 
-    Wire.requestFrom(1, CIGS_DATA_LEN*1);
-    Serial.println("Cigsdata");
+    Serial.println(slave); 
+    Wire.requestFrom(slave, 1);
 
-    // Return false if slace is busy.
-    if(!Wire.available())
+    // Slaves will return false if they are busy making measurments.
+    if (Wire.available() && !Wire.read())
     {
-       Serial.println("Slave, busy");
+       Serial.println("Slave busy.");
        return false;
     }
-
-    // Read data on wire and store in correct data buffer.
-    while(Wire.available())
+    Serial.println("Slave not busy.");
+    
+    // Read data on wire.
+    for(int i = 0; i < CIGS_DATA_LEN; i++)
     {
-        if(index < CIGS_DATA_LEN)
-        {
-            voltageBuffer1[index] = Wire.read();
-        }
-        else
-        {
-            currentBuffer2[index % CIGS_DATA_LEN] = Wire.read();
-        }
-        index++;
+        Wire.requestFrom(slave, 1);
+        cigsData1[i] = Wire.read();
     }
-    Serial.println("Data recieved from slave.");
+
+    Serial.println("Successfully recieved data!");
     return true;
 }
+
+void printData()
+{
+    Serial.println("--------    CIGSDATA 1   --------");
+    Serial.print("V: ");
+    for(int i = 0; i < CIGS_DATA_LEN; i+=4)
+    {
+       Serial.print(word(cigsData1[i], cigsData1[i + 1])); 
+       Serial.print(", ");
+    }
+    Serial.println(" ");
+    Serial.print("A: ");
+    for(int i = 2; i < CIGS_DATA_LEN; i+=4)
+    {
+       Serial.print(word(cigsData1[i], cigsData1[i + 1])); 
+       Serial.print(", ");
+    }
+    Serial.println(" ");
+    Serial.println("--------    CIGSDATA 2   --------");
+    Serial.print("V: ");
+    for(int i = 0; i < CIGS_DATA_LEN; i+=4)
+    {
+       Serial.print(word(cigsData2[i], cigsData2[i + 1])); 
+       Serial.print(", ");
+    }
+    Serial.println(" ");
+    Serial.print("A: ");
+    for(int i = 2; i < CIGS_DATA_LEN; i+=4)
+    {
+       Serial.print(word(cigsData2[i], cigsData2[i + 1])); 
+       Serial.print(", ");
+    }
+    Serial.println(" ");
+}
+
+
 
 void writeToSD()
 {
@@ -120,21 +147,20 @@ void formatData()
     formatedData[2] = frameNumber[0];
     formatedData[3] = frameNumber[1];
 
+    // Radaition and temperature
+    formatedData[4] = radiation[0];
+    formatedData[5] = radiation[1];
+    formatedData[6] = temperature[0];
+    formatedData[7] = temperature[1];
+
     // Voltage and current
-    for(int i = 4; i < CIGS_DATA_LEN + 4; i++)
+    for(int i = 0; i < 2*CIGS_DATA_LEN; i++)
     {
-        formatedData[i] = voltageBuffer1[i];
-        formatedData[CIGS_DATA_LEN+i] = currentBuffer1[i];
-        formatedData[2*CIGS_DATA_LEN+i] = voltageBuffer2[i];
-        formatedData[3*CIGS_DATA_LEN+i] = currentBuffer2[i];
+        formatedData[8 +                 i] = cigsData1[i];
+        formatedData[8 + CIGS_DATA_LEN + i] = cigsData2[i];
     }
 
-    // Radaition and temperature
-    formatedData[CIGS_DATA_LEN*4 + 4] = radiation[0];
-    formatedData[CIGS_DATA_LEN*4 + 5] = radiation[1];
-    formatedData[CIGS_DATA_LEN*4 + 6] = temperature[0];
-    formatedData[CIGS_DATA_LEN*4 + 7] = temperature[1];
-}
+} 
 
 void setup()
 {
@@ -148,17 +174,21 @@ void setup()
 
 void loop()
 {
-    setTimeStamp();
-    setFrameNumber();
     Serial.print("Time past: ");
     Serial.println(timeStamp[1]);
     delay(1000);
-    formatData();
-    writeToSD();
-//    Udp.beginPacket(remoteIP, REMOTE_PORT);
-//    Udp.write(formatedData, 88);
-//    Udp.endPacket();
-      getCigsData(NANO_1_ADDRESS);
+    if(getCigsData(NANO_1_ADDRESS))
+    {
+        setTimeStamp();
+        setFrameNumber();
+        formatData();
+        writeToSD();
+        printData();
+       
+     //   Udp.beginPacket(remoteIP, REMOTE_PORT);
+     //   Udp.write(formatedData, 88);
+     //   Udp.endPacket();
+    }
 
 }
     
