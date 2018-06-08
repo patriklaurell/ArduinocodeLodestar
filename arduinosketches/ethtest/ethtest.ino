@@ -3,16 +3,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <SD.h>
-
-#define REMOTE_PORT    8888
-#define LOCAL_PORT     8888
-
-// These depends on which arduino in in use.
-#define SD_SS_PIN         4
-#define ETHERNET_SS_PIN  10
-#define NANO_1_ADDRESS 0x01 
-#define NANO_2_ADDRESS 0x02 
-#define CIGS_DATA_LEN    40
+#include "Global-variables.h"
 
 // ---- Things for ethernet ---- //
 EthernetUDP Udp;
@@ -28,7 +19,10 @@ uint8_t radiation[2];
 uint8_t temperature[2];
 uint8_t cigsData1[CIGS_DATA_LEN];
 uint8_t cigsData2[CIGS_DATA_LEN];
-uint8_t formatedData[CIGS_DATA_LEN*4+7];
+uint8_t formatedData[CIGS_DATA_LEN*2+7];
+
+bool recievedFromNano1 = false;
+bool recievedFromNano2 = false;
 
 // Initializes the ethernet interface.
 void initEthernet()
@@ -70,22 +64,29 @@ void setTimeStamp()
 bool getCigsData(int slave)
 {
     Serial.print("Requesting data from device ");
-    Serial.println(slave); 
+    Serial.print(slave); 
     Wire.requestFrom(slave, 1);
 
     // Slaves will return false if they are busy making measurments.
     if (Wire.available() && !Wire.read())
     {
-       Serial.println("Slave busy.");
+       Serial.println("..Slave busy.");
        return false;
     }
-    Serial.println("Slave not busy.");
+    Serial.print("..Slave not busy. ");
     
     // Read data on wire.
     for(int i = 0; i < CIGS_DATA_LEN; i++)
     {
         Wire.requestFrom(slave, 1);
-        cigsData1[i] = Wire.read();
+        if(slave == 1)
+        {
+            cigsData1[i] = Wire.read();
+        }
+        else // slave == 2
+        {
+            cigsData2[i] = Wire.read();
+        }
     }
 
     Serial.println("Successfully recieved data!");
@@ -94,7 +95,10 @@ bool getCigsData(int slave)
 
 void printData()
 {
-    Serial.println("--------    CIGSDATA 1   --------");
+    
+    Serial.print("--------    CIGS #");
+    Serial.print(cigsData1[CIGS_DATA_LEN-1]);
+    Serial.println(" DATA    --------");
     Serial.print("V: ");
     for(int i = 0; i < CIGS_DATA_LEN; i+=4)
     {
@@ -109,7 +113,9 @@ void printData()
        Serial.print(", ");
     }
     Serial.println(" ");
-    Serial.println("--------    CIGSDATA 2   --------");
+    Serial.print("--------    CIGS #");
+    Serial.print(cigsData2[CIGS_DATA_LEN-1]);
+    Serial.println(" DATA    --------");
     Serial.print("V: ");
     for(int i = 0; i < CIGS_DATA_LEN; i+=4)
     {
@@ -124,6 +130,17 @@ void printData()
        Serial.print(", ");
     }
     Serial.println(" ");
+    int hours = word(timeStamp[0], timeStamp[1])/3600;
+    int minutes = word(timeStamp[0], timeStamp[1])/60 % 59;
+    int seconds = word(timeStamp[0], setTimeStamp[1]) % 59;
+
+    Serial.print("Time: ");
+    Serial.print(hours);
+    Serial.print(" hours, ");
+    Serial.print(minutes);
+    Serial.print(" minutes and ");
+    Serial.print(seconds);
+    Serial.println(" seconds.");
 }
 
 
@@ -174,21 +191,32 @@ void setup()
 
 void loop()
 {
-    Serial.print("Time past: ");
-    Serial.println(timeStamp[1]);
-    delay(1000);
-    if(getCigsData(NANO_1_ADDRESS))
+    Serial.println("Waiting for cigs data..");
+    while(!recievedFromNano1 && !recievedFromNano2)
     {
-        setTimeStamp();
-        setFrameNumber();
-        formatData();
-        writeToSD();
-        printData();
-       
-     //   Udp.beginPacket(remoteIP, REMOTE_PORT);
-     //   Udp.write(formatedData, 88);
-     //   Udp.endPacket();
+        delay(3000);
+        if(!recievedFromNano1)
+        {
+            recievedFromNano1 = getCigsData(NANO_1_ADDRESS);
+        }
+        if(!recievedFromNano2)
+        {
+            recievedFromNano2 = getCigsData(NANO_2_ADDRESS);
+        }
     }
+    Serial.println(" done!");
+    setTimeStamp();
+    setFrameNumber();
+    formatData();
+    writeToSD();
+    printData();
+
+    Udp.beginPacket(remoteIP, REMOTE_PORT);
+    Udp.write(formatedData, 88);
+    Udp.endPacket();
+    // ----  Resetting  ---- //
+    recievedFromNano1 = false;
+    recievedFromNano2 = false;
 
 }
     

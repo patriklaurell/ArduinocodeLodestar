@@ -1,35 +1,30 @@
 #include <Wire.h>
+#include "Global-variables.h"
 
-#define VOLTAGE_PIN         A1
-#define CURRENT_PIN         A0
-#define ADDRESS              1
-#define GATE_VOLTAGE_PIN     3
-#define DATA_POINTS         20
+#define ADDRESS    NANO_2_ADDRESS
 
-int tracker1   = 0;
-int tracker   = -1; //Keeping track of the current sent data series
-uint8_t cigsDataBuffer[1024]; 
+uint8_t cigsDataBuffer[CIGS_DATA_LEN]; 
 bool allowTransmission = false;
 int bufferIndex = -1;
+
+CigsCell cigs1{VOLTAGE_PIN_1, CURRENT_PIN_1, GATE_PIN_1, 1+(ADDRESS-1)*3};
+CigsCell cigs2{VOLTAGE_PIN_2, CURRENT_PIN_2, GATE_PIN_2, 2+(ADDRESS-1)*3};
+CigsCell cigs3{VOLTAGE_PIN_3, CURRENT_PIN_3, GATE_PIN_3, 3+(ADDRESS-1)*3};
 
 void setup()
 {
     Serial.begin(9600); 
     pinMode(LED_BUILTIN, OUTPUT);
     Wire.begin(ADDRESS);
-    Wire.onRequest(request);
+    Wire.onRequest(requestEvent);
 }
 
-void makeMeasurments()
+void makeMeasurments(CigsCell* cigsCell)
 {
-    Serial.print("Measurment series ");
-    Serial.print(tracker1);
-    Serial.println(" initiated");
-    
-    for (int j = 0; j <= 255; j++)
+    for (int j = 0; j < NUMBER_OF_DATA_POINTS; j++)
     {
         digitalWrite(LED_BUILTIN, HIGH);
-        analogWrite(GATE_VOLTAGE_PIN, j); //Creates square waves with the current duty
+        analogWrite(cigsCell->gatePin, j); //Creates square waves with the current duty
         delay(3);                         //Circuit is allowed to enter steadystate
 
         int averageV = 0;
@@ -38,8 +33,8 @@ void makeMeasurments()
         digitalWrite(LED_BUILTIN, LOW);
         for (int i = 0; i < 300; i++) 
         {
-            averageV += analogRead(VOLTAGE_PIN); //Measures voltage.
-            averageA += analogRead(CURRENT_PIN); //Measures current.
+            averageV += analogRead(cigsCell->voltagePin); //Measures voltage.
+            averageA += analogRead(cigsCell->currentPin); //Measures current.
             delayMicroseconds(100);              //Prevents interferance.   
         }
         // TODO: Maybe not good idea with heltalsdivision.
@@ -49,31 +44,33 @@ void makeMeasurments()
         cigsDataBuffer[4*j+3] = lowByte(j);//averageA/300;
 
     }
+    cigsDataBuffer[CIGS_DATA_LEN-1] = cigsCell->cellNumber;
+    Serial.print(cigsDataBuffer[CIGS_DATA_LEN-1]);
     Serial.println("Done makeing measurment.");
 }
 
-void request()
+void requestEvent()
 {
-    Serial.println("Received request from master");
     if (!allowTransmission)
     {
         Serial.println("Transmission is not allowed.");
         Wire.write(false);
     }
-    if(allowTransmission && bufferIndex == -1)
-    {   
-        Serial.println("Transmission is allowed.");
+    else if(allowTransmission && bufferIndex == -1)
+    {
+        Serial.print("Transmitting data: ");
         Wire.write(true);
         bufferIndex++;
     }
-    else if(allowTransmission && bufferIndex < 40)
+    else if(allowTransmission && bufferIndex < CIGS_DATA_LEN)
     {
-        Serial.print("Transmitting data.");
+        Serial.print(cigsDataBuffer[bufferIndex]);
         Wire.write(cigsDataBuffer[bufferIndex]);
         bufferIndex++;
     }
     else
     {
+        Serial.println(" DONE");
         bufferIndex = -1;
         allowTransmission = false; 
     }
@@ -81,7 +78,7 @@ void request()
 
 void loop()
 {
-    makeMeasurments();
+    makeMeasurments(&cigs1);
 
     // Waiting for data request.
     allowTransmission = true;
