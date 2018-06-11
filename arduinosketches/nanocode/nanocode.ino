@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include "Global-variables.h"
+#include <Lodestar-constants.h>
 
 #define ADDRESS    NANO_2_ADDRESS
 

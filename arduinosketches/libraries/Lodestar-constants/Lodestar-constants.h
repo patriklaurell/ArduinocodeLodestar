@@ -7,6 +7,7 @@
 // ----------- I2C ADDRESSES -------- //
 #define NANO_1_ADDRESS               0x01
 #define NANO_2_ADDRESS               0x02
+#define UNO_ADDRESS                  0x03
 
 // ----------- NANO PINS ------------ //
 #define VOLTAGE_PIN_1               A7

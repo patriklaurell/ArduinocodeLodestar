@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <SD.h>
-#include "Global-variables.h"
+#include <Lodestar-constants.h>
 
 // ---- Things for ethernet ---- //
 EthernetUDP Udp;
@@ -93,6 +93,13 @@ bool getCigsData(int slave)
 
     Serial.println("Successfully recieved data!");
     return true;
+}
+
+void getRadiationData()
+{
+    Wire.requestFrom(UNO_ADDRESS, 2);
+    radiation[0] = Wire.read();
+    radiation[1] = Wire.read();
 }
 
 void printData()
