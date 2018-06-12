@@ -3,6 +3,7 @@
 // ----------- DATA LENGTH ---------- //
 #define NUMBER_OF_DATA_POINTS       5
 #define CIGS_DATA_LEN               4*NUMBER_OF_DATA_POINTS+1
+#define CIGS_CELL_POS               CIGS_DATA_LEN-1
 
 // ----------- I2C ADDRESSES -------- //
 #define NANO_1_ADDRESS               0x01

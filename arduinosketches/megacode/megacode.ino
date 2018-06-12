@@ -75,7 +75,10 @@ bool getCigsData(int slave)
        Serial.println("..Slave busy.");
        return false;
     }
+    
     Serial.print("..Slave not busy. ");
+    Serial.print("Bytes recieved: ");
+    int it = 0;
     
     // Read data on wire.
     for(int i = 0; i < CIGS_DATA_LEN; i++)
@@ -89,7 +92,9 @@ bool getCigsData(int slave)
         {
             cigsData2[i] = Wire.read();
         }
+        it++;
     }
+    Serial.println(it);
 
     Serial.println("Successfully recieved data!");
     return true;
@@ -108,7 +113,7 @@ void printData()
     Serial.print(cigsData1[CIGS_DATA_LEN-1]);
     Serial.println(" DATA    --------");
     Serial.print("V: ");
-    for(int i = 0; i < CIGS_DATA_LEN; i+=4)
+    for(int i = 0; i < CIGS_DATA_LEN-1; i+=4)
     {
        Serial.print(word(cigsData1[i], cigsData1[i + 1])); 
        Serial.print(", ");
@@ -116,7 +121,7 @@ void printData()
 
     Serial.println(" ");
     Serial.print("A: ");
-    for(int i = 2; i < CIGS_DATA_LEN; i+=4)
+    for(int i = 2; i < CIGS_DATA_LEN-1; i+=4)
     {
        Serial.print(word(cigsData1[i], cigsData1[i + 1])); 
        Serial.print(", ");
@@ -127,7 +132,7 @@ void printData()
     Serial.print(cigsData2[CIGS_DATA_LEN-1]);
     Serial.println(" DATA    --------");
     Serial.print("V: ");
-    for(int i = 0; i < CIGS_DATA_LEN; i+=4)
+    for(int i = 0; i < CIGS_DATA_LEN-1; i+=4)
     {
        Serial.print(word(cigsData2[i], cigsData2[i + 1])); 
        Serial.print(", ");
@@ -135,7 +140,7 @@ void printData()
 
     Serial.println(" ");
     Serial.print("A: ");
-    for(int i = 2; i < CIGS_DATA_LEN; i+=4)
+    for(int i = 2; i < CIGS_DATA_LEN-1; i+=4)
     {
        Serial.print(word(cigsData2[i], cigsData2[i + 1])); 
        Serial.print(", ");
@@ -153,8 +158,6 @@ void printData()
     Serial.print(seconds);
     Serial.println(" seconds.");
 }
-
-
 
 void writeToSD()
 {
@@ -196,8 +199,8 @@ void setup()
     radiation[1] = 5;
     temperature[1] = 6;
     Wire.begin();
-    initEthernet();
-    initSDCard();
+    //initEthernet();
+    //initSDCard();
 }
 
 void loop()
@@ -219,11 +222,11 @@ void loop()
     setTimeStamp();
     setFrameNumber();
     formatData();
-    writeToSD();
+    //writeToSD();
     printData();
-   // Udp.beginPacket(remoteIP, REMOTE_PORT);
-   // Udp.write(formatedData, 88);
-   // Udp.endPacket();
+    // Udp.beginPacket(remoteIP, REMOTE_PORT);
+    // Udp.write(formatedData, 88);
+    // Udp.endPacket();
     // ----  Resetting  ---- //
     recievedFromNano1 = false;
     recievedFromNano2 = false;

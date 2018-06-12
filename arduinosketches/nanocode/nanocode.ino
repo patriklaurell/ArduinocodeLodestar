@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <Lodestar-constants.h>
 
-#define ADDRESS    NANO_2_ADDRESS
+#define ADDRESS    NANO_1_ADDRESS
 
 uint8_t cigsDataBuffer[CIGS_DATA_LEN]; 
 bool allowTransmission = false;
