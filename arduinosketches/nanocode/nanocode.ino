@@ -83,6 +83,29 @@ void loop()
     // Waiting for data request.
     allowTransmission = true;
     digitalWrite(LED_BUILTIN, LOW);
+
+    while(allowTransmission)
+    {  
+        Serial.println("waiting...");
+        delay(100);
+    }
+
+    makeMeasurments(&cigs2);
+
+    // Waiting for data request.
+    allowTransmission = true;
+    digitalWrite(LED_BUILTIN, LOW);
+    while(allowTransmission)
+    {  
+        Serial.println("waiting...");
+        delay(100);
+    }
+
+    makeMeasurments(&cigs3);
+
+    // Waiting for data request.
+    allowTransmission = true;
+    digitalWrite(LED_BUILTIN, LOW);
     while(allowTransmission)
     {  
         Serial.println("waiting...");
