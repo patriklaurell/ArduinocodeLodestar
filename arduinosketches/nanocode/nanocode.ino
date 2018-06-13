@@ -1,15 +1,4 @@
-#include <Wire.h>
-#include <Lodestar-constants.h>
-
-#define ADDRESS    NANO_1_ADDRESS
-
-uint8_t cigsDataBuffer[CIGS_DATA_LEN]; 
-bool allowTransmission = false;
-int bufferIndex = -1;
-
-CigsCell cigs1{VOLTAGE_PIN_1, CURRENT_PIN_1, GATE_PIN_1, 1+(ADDRESS-1)*3};
-CigsCell cigs2{VOLTAGE_PIN_2, CURRENT_PIN_2, GATE_PIN_2, 2+(ADDRESS-1)*3};
-CigsCell cigs3{VOLTAGE_PIN_3, CURRENT_PIN_3, GATE_PIN_3, 3+(ADDRESS-1)*3};
+#include "nanocode.h"
 
 void setup()
 {

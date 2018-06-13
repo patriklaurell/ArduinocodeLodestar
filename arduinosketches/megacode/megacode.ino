@@ -1,29 +1,47 @@
-#include <Ethernet.h>
-#include <EthernetUdp.h>
-#include <SPI.h>
-#include <Wire.h>
-#include <SD.h>
-#include <Lodestar-constants.h>
+#include "megacode.h"
 
-// ---- Things for ethernet ---- //
-EthernetUDP Udp;
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress remoteIP(192, 168, 0, 2);
-IPAddress localIP(192, 168, 0, 200);
+void setup()
+{
+    Serial.begin(9600);
+    radiation[1] = 5;
+    temperature[1] = 6;
+    Wire.begin();
+    //initEthernet();
+    //initSDCard();
+}
 
-// -------- Data stuff -------- //
-File dataFile;
-uint8_t timeStamp[2];
-uint8_t frameNumber[2];
-uint8_t radiation[2];
-uint8_t temperature[2];
-uint8_t cigsData1[CIGS_DATA_LEN];
-uint8_t cigsData2[CIGS_DATA_LEN];
-uint8_t formatedData[CIGS_DATA_LEN*2+7];
+void loop()
+{
+    Serial.println("Waiting for cigs data..");
 
-bool recievedFromNano1 = false;
-bool recievedFromNano2 = false;
+    // Wait until recieved cigs data from both nanos.
+    while(!recievedFromNano1 && !recievedFromNano2)
+    {
+        delay(3000);
+        if(!recievedFromNano1)
+        {
+            recievedFromNano1 = getCigsData(NANO_1_ADDRESS);
+        }
+        if(!recievedFromNano2)
+        {
+            recievedFromNano2 = getCigsData(NANO_2_ADDRESS);
+        }
+    }
+    Serial.println(" done!");
+    setTimeStamp();
+    setFrameNumber();
+    formatData();
+    //writeToSD();
+    printData();
+    // Udp.beginPacket(remoteIP, REMOTE_PORT);
+    // Udp.write(formatedData, 88);
+    // Udp.endPacket();
 
+    // ----  Resetting  ---- //
+    recievedFromNano1 = false;
+    recievedFromNano2 = false;
+
+}
 // Initializes the ethernet interface.
 void initEthernet()
 {
@@ -100,6 +118,16 @@ bool getCigsData(int slave)
     return true;
 }
 
+// TODO
+void getTemperatureData()
+{
+}
+
+// TODO
+void getPreassureData()
+{
+}
+
 void getRadiationData()
 {
     Wire.requestFrom(UNO_ADDRESS, 2);
@@ -107,6 +135,8 @@ void getRadiationData()
     radiation[1] = Wire.read();
 }
 
+
+// Used for debugging.
 void printData()
 {
     Serial.print("--------    CIGS #");
@@ -193,43 +223,5 @@ void formatData()
 
 } 
 
-void setup()
-{
-    Serial.begin(9600);
-    radiation[1] = 5;
-    temperature[1] = 6;
-    Wire.begin();
-    //initEthernet();
-    //initSDCard();
-}
 
-void loop()
-{
-    Serial.println("Waiting for cigs data..");
-    while(!recievedFromNano1 && !recievedFromNano2)
-    {
-        delay(3000);
-        if(!recievedFromNano1)
-        {
-            recievedFromNano1 = getCigsData(NANO_1_ADDRESS);
-        }
-        if(!recievedFromNano2)
-        {
-            recievedFromNano2 = getCigsData(NANO_2_ADDRESS);
-        }
-    }
-    Serial.println(" done!");
-    setTimeStamp();
-    setFrameNumber();
-    formatData();
-    //writeToSD();
-    printData();
-    // Udp.beginPacket(remoteIP, REMOTE_PORT);
-    // Udp.write(formatedData, 88);
-    // Udp.endPacket();
-    // ----  Resetting  ---- //
-    recievedFromNano1 = false;
-    recievedFromNano2 = false;
-
-}
     
