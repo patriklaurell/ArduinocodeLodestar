@@ -7,7 +7,7 @@
 #include <Adafruit_BME280.h>
 #include <Lodestar-constants.h>
 
-// ---- Things for ethernet ---- //
+Adafruit_BME280 Thermometer;
 EthernetUDP Udp;
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 IPAddress remoteIP(192, 168, 0, 2);
@@ -52,9 +52,6 @@ bool getCigsData(int slave);
 // units above -40. Each unit is (84+125) / 2^16 ≈ 0.001 C. The data is stored
 // as high byte and low byte in temperatureData.
 void getTemperatureData();
-
-// TODO
-void getPressureData();
 
 // Reads the radiation level from the Ardino Uno and stores it as high byte
 // and low byte in radiationData.

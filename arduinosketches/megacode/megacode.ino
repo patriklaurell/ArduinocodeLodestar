@@ -3,8 +3,7 @@
 void setup()
 {
     Serial.begin(9600);
-    radiation[1] = 5;
-    temperature[1] = 6;
+    !Thermometer.begin(); 
     Wire.begin();
     //initEthernet();
     //initSDCard();
@@ -118,14 +117,13 @@ bool getCigsData(int slave)
     return true;
 }
 
-// TODO
 void getTemperatureData()
 {
-}
-
-// TODO
-void getPreassureData()
-{
+    double celciusAboveMinus40 = 40 + Thermometer.readTemperature();
+    int tempUnitsAboveMinus40 = celciusAboveMinus40 * 65536 / 125;
+    temperature[0] = highByte(tempUnitsAboveMinus40);
+    temperature[1] = lowByte(tempUnitsAboveMinus40);
+    
 }
 
 void getRadiationData()
@@ -135,8 +133,6 @@ void getRadiationData()
     radiation[1] = Wire.read();
 }
 
-
-// Used for debugging.
 void printData()
 {
     Serial.print("--------    CIGS #");
@@ -197,7 +193,6 @@ void writeToSD()
     dataFile.close();
 }
 
-// Puts all data into formatedData.
 void formatData()
 {
     // Time stamp
@@ -220,7 +215,6 @@ void formatData()
         formatedData[8 +                 i] = cigsData1[i];
         formatedData[8 + CIGS_DATA_LEN + i] = cigsData2[i];
     }
-
 } 
 
 
