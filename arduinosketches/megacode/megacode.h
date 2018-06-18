@@ -5,6 +5,7 @@
 #include <SD.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
+#include <avr/wdt.h>
 #include <Lodestar-constants.h>
 
 Adafruit_BME280 Thermometer;
@@ -32,6 +33,7 @@ bool recievedFromNano2 = false;
 void initEthernet();
 void initSDCard();
 
+void initWatchDog();
 // Increments the frame number and stores it as high byte and low byte in
 // frameNumber.
 void setFrameNumber();
