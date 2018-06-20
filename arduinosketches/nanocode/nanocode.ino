@@ -1,103 +1,103 @@
-#include <Wire.h>
-
-#define VOLTAGE_PIN         A1
-#define CURRENT_PIN         A0
-#define GATE_VOLTAGE_PIN     3
-
-//int period = 256; // Period time for a square sequence
-int duty[256];      // Array filled with values for how long 
-                    // the square part will be in the pulse.
-int tracker1   = 0;
-int tracker   = -1; //Keeping track of the current sent data series
-int measuredV[256]; //Array storing the measured voltages for a series
-int measuredA[256]; //Array storing the measured current for a series
-byte data[4];
-boolean flag=false;
-boolean check=false;
+#include "nanocode.h"
 
 void setup()
 {
     Serial.begin(9600); 
-    Wire.begin(1);
-    Wire.onRequest(request);
-    // Wire.onReceive(event);
+    pinMode(LED_BUILTIN, OUTPUT);
+    Wire.begin(ADDRESS);
+    Wire.onRequest(requestEvent);
+}
 
-    // Duty cycle of pwm wave.
-    for (int j = 0; j <= 255; j++) 
+void makeMeasurments(CigsCell* cigsCell)
+{
+    for (int j = 0; j < NUMBER_OF_DATA_POINTS; j++)
     {
-        duty[j] = j;
+        digitalWrite(LED_BUILTIN, HIGH);
+        analogWrite(cigsCell->gatePin, j); //Creates square waves with the current duty
+        delay(3);                         //Circuit is allowed to enter steadystate
+
+        int averageV = 0;
+        int averageA = 0;
+        
+        digitalWrite(LED_BUILTIN, LOW);
+        for (int i = 0; i < 300; i++) 
+        {
+            averageV += analogRead(cigsCell->voltagePin); //Measures voltage.
+            averageA += analogRead(cigsCell->currentPin); //Measures current.
+            delayMicroseconds(100);              //Prevents interferance.   
+        }
+        // TODO: Maybe not good idea with heltalsdivision.
+        cigsDataBuffer[4*j  ] = highByte(j);//averageV/300;
+        cigsDataBuffer[4*j+1] = lowByte(j);//averageA/300;
+        cigsDataBuffer[4*j+2] = highByte(j);//averageV/300;
+        cigsDataBuffer[4*j+3] = lowByte(j);//averageA/300;
+
+    }
+    cigsDataBuffer[CIGS_DATA_LEN-1] = cigsCell->cellNumber;
+    Serial.print(cigsDataBuffer[CIGS_DATA_LEN-1]);
+    Serial.println("Done makeing measurment.");
+}
+
+void requestEvent()
+{
+    if (!allowTransmission)
+    {
+        Serial.println("Transmission is not allowed.");
+        Wire.write(false);
+    }
+    else if(allowTransmission && bufferIndex == -1)
+    {
+        Serial.print("Transmitting data: ");
+        Wire.write(true);
+        bufferIndex++;
+    }
+    else if(allowTransmission && bufferIndex < CIGS_DATA_LEN)
+    {
+        Serial.print(cigsDataBuffer[bufferIndex]);
+        Wire.write(cigsDataBuffer[bufferIndex]);
+        bufferIndex++;
+    }
+    else
+    {
+        Serial.println(" DONE");
+        bufferIndex = -1;
+        allowTransmission = false; 
     }
 }
 
 void loop()
 {
-    //void event(int howMany) {
-    Serial.print("Measurment series ");
-    Serial.print(tracker1);
-    Serial.println(" initiated");
+    makeMeasurments(&cigs1);
 
-    for (int j = 0; j <= 255; j++)
-    {
-        analogWrite(GATE_VOLTAGE_PIN, duty[j]); //Creates square waves with the current duty
-        delay(3); //Circuit is allowed to enter steadystate
+    // Waiting for data request.
+    allowTransmission = true;
+    digitalWrite(LED_BUILTIN, LOW);
 
-        //int32_t averageV = 0;
-        //int32_t averageA = 0;
-        int averageV = 0;
-        int averageA = 0;
+    while(allowTransmission)
+    {  
+        Serial.println("waiting...");
+        delay(100);
+    }
 
-        for (int i = 0; i < 300; i++) 
-        {
-            averageV += analogRead(VOLTAGE_PIN); //Measures V
-            averageA += analogRead(CURRENT_PIN); //Measures A
-            delayMicroseconds(100); //Prevents interferance when measuring  
-        }
-        measuredV[j] = averageV/300;
-        measuredA[j] = averageA/300;
+    makeMeasurments(&cigs2);
 
-        Serial.println(j);
-        if(j == 255)
-        {
-            flag = true;
-            Serial.println("klar");
-        }
-        while(flag){}
-        tracker1++;
+    // Waiting for data request.
+    allowTransmission = true;
+    digitalWrite(LED_BUILTIN, LOW);
+    while(allowTransmission)
+    {  
+        Serial.println("waiting...");
+        delay(100);
+    }
+
+    makeMeasurments(&cigs3);
+
+    // Waiting for data request.
+    allowTransmission = true;
+    digitalWrite(LED_BUILTIN, LOW);
+    while(allowTransmission)
+    {  
+        Serial.println("waiting...");
+        delay(100);
     }
 }
-
-
-void intToByte(int a, int b) 
-{
-    data[0]=highByte(a);
-    data[1]=lowByte(a);
-    data[2]=highByte(b);
-    data[3]=lowByte(b);
-    return;
-}
-
-void request()
-{
-    if(flag && tracker==-1)
-    {
-        check=true;
-        tracker++;
-        Wire.write('1');
-    }
-    else if(!check)
-    {
-        Wire.write('0');
-    }
-    if(check && tracker>=0)
-    {
-        intToByte(measuredV[tracker],measuredA[tracker]);
-        tracker++;
-        if (tracker==255)
-        {
-            tracker=-1;
-            check=false;
-        }
-        Wire.write(data,4);
-    }
-}
-
