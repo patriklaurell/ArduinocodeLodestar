@@ -4,14 +4,15 @@
 #include <Wire.h>
 #include <SD.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
+#include <Adafruit_BMP280.h>
 #include <avr/wdt.h>
 #include <Lodestar-constants.h>
 
-Adafruit_BME280 Thermometer;
+Adafruit_BMP280 Thermometer;
+
 EthernetUDP Udp;
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress remoteIP(192, 168, 0, 2);
+IPAddress remoteIP(192, 168, 0, 3);
 IPAddress localIP(192, 168, 0, 200);
 
 // -------- Data stuff -------- //
@@ -22,7 +23,7 @@ uint8_t radiation[2];
 uint8_t temperature[2];
 uint8_t cigsData1[CIGS_DATA_LEN];
 uint8_t cigsData2[CIGS_DATA_LEN];
-uint8_t formatedData[CIGS_DATA_LEN*2+7];
+uint8_t formatedData[FORMATED_DATA_LEN];
 
 bool recievedFromNano1 = false;
 bool recievedFromNano2 = false;
@@ -70,6 +71,10 @@ void formatData();
 
 // Writes formatedData to the SD-card.
 void writeToSD();
+
+// Sends data to ground station, via UDP, on the same format described
+// in formatData.
+void sendToGS();
 
 // Prints the data to Serial. Used for debugging.
 void printData();

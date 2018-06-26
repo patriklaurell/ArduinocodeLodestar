@@ -4,51 +4,69 @@ void setup()
 {
     Serial.begin(9600);
     Serial.println("Start");
-    !Thermometer.begin(); 
+    pinMode(LED_BUILTIN, OUTPUT);
     Wire.begin();
-    //initEthernet();
-    //initSDCard();
+    if(Thermometer.begin())
+    {
+        Serial.println("Initializing thermometer successful.");
+    }
+    else
+    {
+        Serial.println("Initializing thermometer failed.");
+    }
+    initEthernet();
+    initSDCard();
     initWatchDog();
 }
 
 void loop()
 {
+    // Wait until recieved cigs data from both nanos or 
+    // until time out.
     Serial.println("Waiting for cigs data..");
-
-    // Wait until recieved cigs data from both nanos.
-    while(!recievedFromNano1 && !recievedFromNano2)
+    uint32_t initTime = millis();
+    uint32_t timeSpentWaiting{};
+    while(!(recievedFromNano1 && recievedFromNano2))
     {
+        timeSpentWaiting = millis() - initTime;
+        if(timeSpentWaiting > CIGS_DATA_TIMEOUT)
+        {
+            Serial.print("Cigs data time out!");
+            break;
+        }
+
         wdt_reset();
         if(!recievedFromNano1)
         {
             recievedFromNano1 = getCigsData(NANO_1_ADDRESS);
         }
+        wdt_reset();
         if(!recievedFromNano2)
         {
             recievedFromNano2 = getCigsData(NANO_2_ADDRESS);
         }
-        wdt_reset();
+        delay(3000);
     }
-    Serial.println(" done!");
     setTimeStamp();
+    wdt_reset();
     setFrameNumber();
+    wdt_reset();
+    getTemperatureData();
+    wdt_reset();
+    getRadiationData();
+    wdt_reset();
     formatData();
-
-    
-    //wdt_reset();
-    //writeToSD();
-    //wtd_reset();
-
-    printData();
-    // wtd_reset();
-    // Udp.beginPacket(remoteIP, REMOTE_PORT);
-    // Udp.write(formatedData, 88);
-    // Udp.endPacket();
-    // wtd_reset();
+    wdt_reset();
+    writeToSD();
+    wdt_reset();
+    sendToGS(); 
+    wdt_reset();
 
     // ----  Resetting  ---- //
     recievedFromNano1 = false;
     recievedFromNano2 = false;
+    memset(cigsData1, 0 ,CIGS_DATA_LEN);
+    memset(cigsData2, 0 ,CIGS_DATA_LEN);
 }
 
 ISR(WDT_vect)
@@ -104,53 +122,67 @@ void setTimeStamp()
 
 bool getCigsData(int slave)
 {
-    //Serial.print("Requesting data from device ");
-    //Serial.print(slave); 
+    Serial.print("Requesting data from device ");
+    Serial.print(slave); 
     Wire.requestFrom(slave, 1);
+    delay(5);
+    uint8_t callBack = Wire.read();
+    Serial.print(" Callback: ");
+    Serial.print(callBack);
 
     // Slaves will return false if they are busy making measurments.
-    if (Wire.available() && !Wire.read())
+    if (callBack == TRANSMISSION_FORBIDDEN)
     {
-       //Serial.println("..Slave busy.");
+       Serial.println("..Slave busy, transmssion forbidden.");
        return false;
     }
-    
-    //Serial.print("..Slave not busy. ");
-    //Serial.print("Bytes recieved: ");
-    int it = 0;
-    
-    // Read data on wire.
-    for(int i = 0; i < CIGS_DATA_LEN; i++)
+    else if (callBack == TRANSMISSION_ALLOWED)
     {
-        Wire.requestFrom(slave, 1);
-        if(slave == 1)
-        {
-            cigsData1[i] = Wire.read();
-        }
-        else // slave == 2
-        {
-            cigsData2[i] = Wire.read();
-        }
-        it++;
-    }
-    Serial.println(it);
+        Serial.print("..Slave not busy, transmission allowed. ");
 
-    //Serial.println("Successfully recieved data!");
-    return true;
+        // Read data on wire.
+        for(int i = 0; i < CIGS_DATA_LEN; i++)
+        {
+            wdt_reset();
+            digitalWrite(LED_BUILTIN, HIGH);
+            Wire.requestFrom(slave, 1);
+            if(slave == 1)
+            {
+                cigsData1[i] = Wire.read();
+            }
+            if(slave == 2)
+            {
+                cigsData2[i] = Wire.read();
+            }
+            digitalWrite(LED_BUILTIN, LOW);
+        }
+
+        Serial.print("Successfully recieved data from Nano ");
+        Serial.println(slave);
+
+        return true;
+    }
+    else
+    {
+       Serial.println("..Slave busy, unknown callback.");
+       return false;
+    }
 }
 
 void getTemperatureData()
 {
     double celciusAboveMinus40 = 40 + Thermometer.readTemperature();
-    int tempUnitsAboveMinus40 = celciusAboveMinus40 * 65536 / 125;
-    temperature[0] = highByte(tempUnitsAboveMinus40);
-    temperature[1] = lowByte(tempUnitsAboveMinus40);
-    
+    uint16_t tempUnitsAboveMinus40 = celciusAboveMinus40 * 65536 / 125;
+    //temperature[0] = highByte(tempUnitsAboveMinus40);
+    //temperature[1] = lowByte(tempUnitsAboveMinus40);
+    uint16_t test = 10;
+    temperature[0] = highByte(test);
+    temperature[1] = lowByte(test);
 }
 
 void getRadiationData()
 {
-    Wire.requestFrom(UNO_ADDRESS, 2);
+    Wire.requestFrom(GEIGER_ADDRESS, 2);
     radiation[0] = Wire.read();
     radiation[1] = Wire.read();
 }
@@ -203,9 +235,32 @@ void printData()
 void writeToSD()
 {
     dataFile = SD.open("data", FILE_WRITE);
-    Serial.print("Number of bytes written: ");
-    Serial.println(dataFile.write(formatedData, CIGS_DATA_LEN*4 + 8));
+    dataFile.write(timeStamp, 2);
+    dataFile.write(frameNumber, 2);
+    dataFile.write(radiation, 2);
+    dataFile.write(temperature[0]);
+    dataFile.write(temperature[1]);
+    dataFile.write(cigsData1, CIGS_DATA_LEN);
+    dataFile.write(cigsData2, CIGS_DATA_LEN);
     dataFile.close();
+}
+
+void sendToGS()
+{
+    Udp.beginPacket(remoteIP, REMOTE_PORT);
+    Udp.write(timeStamp, 2);
+    Udp.write(frameNumber, 2);
+    Udp.write(radiation, 2);
+    Udp.write(temperature[0]);
+    Udp.write(temperature[1]);
+    Udp.endPacket();
+    Udp.beginPacket(remoteIP, REMOTE_PORT);
+    Udp.write(cigsData1, CIGS_DATA_LEN);
+    Udp.endPacket();
+
+    Udp.beginPacket(remoteIP, REMOTE_PORT);
+    Udp.write(cigsData2, CIGS_DATA_LEN);
+    Udp.endPacket();
 }
 
 void formatData()
@@ -223,10 +278,10 @@ void formatData()
     formatedData[5] = radiation[1];
     formatedData[6] = temperature[0];
     formatedData[7] = temperature[1];
-
+    
     // Voltage and current
-    for(int i = 0; i < 2*CIGS_DATA_LEN; i++)
-    {
+    for(int i = 0; i < CIGS_DATA_LEN; i++)
+    {   
         formatedData[8 +                 i] = cigsData1[i];
         formatedData[8 + CIGS_DATA_LEN + i] = cigsData2[i];
     }

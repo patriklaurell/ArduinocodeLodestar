@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <avr/wdt.h>
 #include <Lodestar-constants.h>
 
 // One change this to NANO_1_ADDRESS or NANO_2_ADDRESS. Take note witch Nano is
@@ -7,7 +8,6 @@
 #define ADDRESS    NANO_1_ADDRESS
 
 // -------- DATA STUFF -------- //
-
 uint8_t cigsDataBuffer[CIGS_DATA_LEN]; 
 bool allowTransmission = false;
 int bufferIndex = -1;
