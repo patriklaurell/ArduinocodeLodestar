@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <script type="text/javascript" src="static/js/jquery-3.3.1.min.js"></script>
@@ -10,13 +11,49 @@
     </head>
     <body>
         <h1>Lodestar BEXUS Ground Support</h1>
-        <h3>Voltage 1</p>
-        <p id="v1"></p>
-        <h3>Current 1</p>
-        <p id="i1"></p>
-        <h3>Voltage 2</p>
-        <p id="v2"></p>
-        <h3>Current 2</p>
-        <p id="i2"></p>
+        <input id="goto_input" type="number" class="form-control"></input><button id="goto_button" type="button" class="btn btn-primary">Goto</button>
+        <button id="prev_button" type="button" class="btn btn-primary">Previous</button>
+        <button id="next_button" type="button" class="btn btn-primary">Next</button>
+        <div>Time: <span id="time">haha</span> s</div>
+        <div>Temperature: <span id="temp">haha</span> °C</div>
+        <div>Radiation: <span id="rad">haha</span> counts/min</div>
+        <div>Frame: <span id="frame_nr">haha</span></div>
+        <div>Recieved: <span id="datetime">haha</span></div>
+
+        <h3 id="c1">Cell 1</h3>
+        <h5>Current</h5>
+        <p id="c1i"></p>
+        <h5>Voltage</h5>
+        <p id="c1v"></p>
+        
+        <h3 id="c2">Cell 2</h3>
+        <h5>Current</h5>
+        <p id="c2i"></p>
+        <h5>Voltage</h5>
+        <p id="c2v"></p>
+        
+        <h3 id="c3">Cell 3</h3>
+        <h5>Current</h5>
+        <p id="c3i"></p>
+        <h5>Voltage</h5>
+        <p id="c3v"></p>
+        
+        <h3 id="c4">Cell 4</h3>
+        <h5>Current</h5>
+        <p id="c4i"></p>
+        <h5>Voltage</h5>
+        <p id="c4v"></p>
+        
+        <h3 id="c5">Cell 5</h3>
+        <h5>Current</h5>
+        <p id="c5i"></p>
+        <h5>Voltage</h5>
+        <p id="c5v"></p>
+        
+        <h3 id="c6">Cell 6</h3>
+        <h5>Current</h5>
+        <p id="c6i"></p>
+        <h5>Voltage</h5>
+        <p id="c6v"></p>
     </body>
 </html>
