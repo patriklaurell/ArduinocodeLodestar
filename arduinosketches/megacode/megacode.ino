@@ -1,11 +1,15 @@
 #include "megacode.h"
 
-uint16_t test = 10;
 void setup()
 {
+    
     Serial.begin(9600);
     Serial.println("Start");
+    pinMode(SD_SS_PIN, OUTPUT);
+    pinMode(ETHERNET_SS_PIN, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(SD_SS_PIN, HIGH);
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
     Wire.begin();
     if(Thermometer.begin())
     {
@@ -56,8 +60,10 @@ void loop()
     wdt_reset();
     getRadiationData();
     wdt_reset();
+    Serial.println("Writing to SD.");
     writeToSD();
     wdt_reset();
+    Serial.println("Transmitting.");
     sendToGS(); 
     wdt_reset();
 
@@ -87,12 +93,15 @@ void initWatchDog()
 
 void initEthernet()
 {
+    digitalWrite(ETHERNET_SS_PIN, LOW);
     Ethernet.begin(mac, localIP);
     Udp.begin(LOCAL_PORT);
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
 }
 
 void initSDCard()
 {
+    digitalWrite(SD_SS_PIN, LOW);
     if(!SD.begin(SD_SS_PIN))
     {
         Serial.println("Failed initializing SD-card.");
@@ -102,6 +111,7 @@ void initSDCard()
     {
         Serial.println("Successfully initialized SD-card.");
     }
+    digitalWrite(SD_SS_PIN, HIGH);
 }
 
 void setFrameNumber()
@@ -230,6 +240,7 @@ void printData()
 
 void writeToSD()
 {
+    digitalWrite(SD_SS_PIN, LOW);
     dataFile = SD.open("data", FILE_WRITE);
     dataFile.write(timeStamp, 2);
     dataFile.write(frameNumber, 2);
@@ -238,10 +249,12 @@ void writeToSD()
     dataFile.write(cigsData1, CIGS_DATA_LEN);
     dataFile.write(cigsData2, CIGS_DATA_LEN);
     dataFile.close();
+    digitalWrite(SD_SS_PIN, HIGH);
 }
 
 void sendToGS()
 {
+    digitalWrite(ETHERNET_SS_PIN, LOW);
     Udp.beginPacket(remoteIP, REMOTE_PORT);
     Udp.write(timeStamp, 2);
     Udp.write(frameNumber, 2);
@@ -256,6 +269,7 @@ void sendToGS()
     Udp.beginPacket(remoteIP, REMOTE_PORT);
     Udp.write(cigsData2, CIGS_DATA_LEN);
     Udp.endPacket();
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
 }
 
 
