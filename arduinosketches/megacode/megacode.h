@@ -23,7 +23,6 @@ uint8_t radiation[2];
 uint8_t temperature[2];
 uint8_t cigsData1[CIGS_DATA_LEN];
 uint8_t cigsData2[CIGS_DATA_LEN];
-uint8_t formatedData[FORMATED_DATA_LEN];
 
 bool recievedFromNano1 = false;
 bool recievedFromNano2 = false;
@@ -60,20 +59,18 @@ void getTemperatureData();
 // and low byte in radiationData.
 void getRadiationData();
 
-// Takes all the data arrays and puts them into formatedData. The order is:
+// Writes formatedData to the SD-card on the format:
 // 1. Time stamp      
 // 2. Frame number    
 // 3. Radiation level 
 // 4. Temperature     
 // 5. Cigs data from Nano 1          
 // 6. Cigs data from Nano 2          
-void formatData();
-
-// Writes formatedData to the SD-card.
 void writeToSD();
 
+
 // Sends data to ground station, via UDP, on the same format described
-// in formatData.
+// in writeToSD.
 void sendToGS();
 
 // Prints the data to Serial. Used for debugging.

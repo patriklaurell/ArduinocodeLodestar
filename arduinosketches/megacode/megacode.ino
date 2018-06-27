@@ -2,9 +2,14 @@
 
 void setup()
 {
+    
     Serial.begin(9600);
     Serial.println("Start");
+    pinMode(SD_SS_PIN, OUTPUT);
+    pinMode(ETHERNET_SS_PIN, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(SD_SS_PIN, HIGH);
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
     Wire.begin();
     if(Thermometer.begin())
     {
@@ -55,10 +60,10 @@ void loop()
     wdt_reset();
     getRadiationData();
     wdt_reset();
-    formatData();
-    wdt_reset();
+    Serial.println("Writing to SD.");
     writeToSD();
     wdt_reset();
+    Serial.println("Transmitting.");
     sendToGS(); 
     wdt_reset();
 
@@ -88,12 +93,15 @@ void initWatchDog()
 
 void initEthernet()
 {
+    digitalWrite(ETHERNET_SS_PIN, LOW);
     Ethernet.begin(mac, localIP);
     Udp.begin(LOCAL_PORT);
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
 }
 
 void initSDCard()
 {
+    digitalWrite(SD_SS_PIN, LOW);
     if(!SD.begin(SD_SS_PIN))
     {
         Serial.println("Failed initializing SD-card.");
@@ -103,6 +111,7 @@ void initSDCard()
     {
         Serial.println("Successfully initialized SD-card.");
     }
+    digitalWrite(SD_SS_PIN, HIGH);
 }
 
 void setFrameNumber()
@@ -173,11 +182,8 @@ void getTemperatureData()
 {
     double celciusAboveMinus40 = 40 + Thermometer.readTemperature();
     uint16_t tempUnitsAboveMinus40 = celciusAboveMinus40 * 65536 / 125;
-    //temperature[0] = highByte(tempUnitsAboveMinus40);
-    //temperature[1] = lowByte(tempUnitsAboveMinus40);
-    uint16_t test = 10;
-    temperature[0] = highByte(test);
-    temperature[1] = lowByte(test);
+    temperature[0] = highByte(tempUnitsAboveMinus40);
+    temperature[1] = lowByte(tempUnitsAboveMinus40);
 }
 
 void getRadiationData()
@@ -234,26 +240,28 @@ void printData()
 
 void writeToSD()
 {
+    digitalWrite(SD_SS_PIN, LOW);
     dataFile = SD.open("data", FILE_WRITE);
     dataFile.write(timeStamp, 2);
     dataFile.write(frameNumber, 2);
     dataFile.write(radiation, 2);
-    dataFile.write(temperature[0]);
-    dataFile.write(temperature[1]);
+    dataFile.write(temperature, 2);
     dataFile.write(cigsData1, CIGS_DATA_LEN);
     dataFile.write(cigsData2, CIGS_DATA_LEN);
     dataFile.close();
+    digitalWrite(SD_SS_PIN, HIGH);
 }
 
 void sendToGS()
 {
+    digitalWrite(ETHERNET_SS_PIN, LOW);
     Udp.beginPacket(remoteIP, REMOTE_PORT);
     Udp.write(timeStamp, 2);
     Udp.write(frameNumber, 2);
     Udp.write(radiation, 2);
-    Udp.write(temperature[0]);
-    Udp.write(temperature[1]);
+    Udp.write(temperature, 2);
     Udp.endPacket();
+    
     Udp.beginPacket(remoteIP, REMOTE_PORT);
     Udp.write(cigsData1, CIGS_DATA_LEN);
     Udp.endPacket();
@@ -261,31 +269,8 @@ void sendToGS()
     Udp.beginPacket(remoteIP, REMOTE_PORT);
     Udp.write(cigsData2, CIGS_DATA_LEN);
     Udp.endPacket();
+    digitalWrite(ETHERNET_SS_PIN, HIGH);
 }
-
-void formatData()
-{
-    // Time stamp
-    formatedData[0] = timeStamp[0];
-    formatedData[1] = timeStamp[1];
-
-    // Frame number
-    formatedData[2] = frameNumber[0];
-    formatedData[3] = frameNumber[1];
-
-    // Radaition and temperature
-    formatedData[4] = radiation[0];
-    formatedData[5] = radiation[1];
-    formatedData[6] = temperature[0];
-    formatedData[7] = temperature[1];
-    
-    // Voltage and current
-    for(int i = 0; i < CIGS_DATA_LEN; i++)
-    {   
-        formatedData[8 +                 i] = cigsData1[i];
-        formatedData[8 + CIGS_DATA_LEN + i] = cigsData2[i];
-    }
-} 
 
 
     
