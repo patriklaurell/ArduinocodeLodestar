@@ -74,6 +74,7 @@ class RecieveDataThread(Thread):
         Listen for data over UDP connection
         """
         global frames
+        global FRAME_NR
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((UDP_IP, UDP_PORT))
@@ -87,7 +88,8 @@ class RecieveDataThread(Thread):
                 data = decode_packet(data_packet)
                 socketio.emit('new_metadata', {'data': data}, namespace='/test')
                 frames.append({'metadata': data, 'data': []})
-                print("Appending frame {}".format(frames[-1]))
+                FRAME_NR = len(frames) - 1
+                print("Current frame number: {}".format(FRAME_NR))
             else:
                 data = decode_packet(data_packet)
                 print("Adding data to last frame.")
@@ -190,7 +192,6 @@ def main():
             while not all(x==0 for x in packet):
                 if len(frames) % 100 == 0:
                     print("Completed {} frames".format(len(frames)))
-                packet = f.read(DATA_FRAME_LEN)
                 metadata = decode_packet(packet[0:8])
                 data1 = decode_packet(packet[8:1025+8])
                 data2 = decode_packet(packet[1025+8:])
@@ -198,6 +199,7 @@ def main():
                     'metadata': metadata,
                     'data': [data1, data2]
                 })
+                packet = f.read(DATA_FRAME_LEN)
             print("...done!")
 
         finally:

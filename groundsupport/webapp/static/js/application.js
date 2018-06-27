@@ -27,6 +27,7 @@ $(document).ready(function () {
         $("#temp").text(temp);
         $("#rad").text(rad);
         $("#frame_nr").text(frame_nr);
+        $("#time_since_last").text(0);
         $("h3").css('color', '');
         $("h3").css('background-color', '');
     });
@@ -50,4 +51,10 @@ $(document).ready(function () {
         console.log("goto frame: " + f)
         socket.emit('goto_frame', f);
     })
+
+    setInterval(function() {
+        let t = $("#time_since_last").text();
+        let tnew = parseInt(t) + 1;
+        $("#time_since_last").text(tnew);
+    }, 1000);
 })
