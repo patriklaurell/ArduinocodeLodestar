@@ -23,5 +23,6 @@ The on board software consists of two programs, one running on an Arduino Mega a
 The micro-SD card should be an 2 GB formated as FAT16.
 
 ### Required libraries
-Markup : * Afafruit Sensor
-         * Adafruit BMP280
+* Afafruit Sensor
+* Adafruit BMP280
+* MemoryFree
