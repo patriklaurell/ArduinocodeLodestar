@@ -4,10 +4,18 @@
         <script type="text/javascript" src="static/js/jquery-3.3.1.min.js"></script>
         <script type="text/javascript" src="static/js/socket.io.min.js"></script>
         <script type="text/javascript" src="static/js/application.js"></script>
+            <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
 
         <link rel="stylesheet" href="static/css/bootstrap.min.css">
 
-        <title>Lodestar BEXUS Control Panel</title>
+        <title>Lodestar BEXUS Control Panel Graphhhhzzz</title>
+
+      <style>
+        canvas {
+          width: 700px !important;
+          height: 500px !important;
+        }
+      </style>
     </head>
     <body>
         <h1>Lodestar BEXUS Ground Support</h1>
@@ -20,40 +28,12 @@
         <div>Frame: <span id="frame_nr">____</span></div>
         <div>Time since last frame: <span id="time_since_last">0</span> s</div>
 
-        <h3 id="c1">Cell 1</h3>
-        <h5>Current</h5>
-        <p id="c1i"></p>
-        <h5>Voltage</h5>
-        <p id="c1v"></p>
-        
-        <h3 id="c2">Cell 2</h3>
-        <h5>Current</h5>
-        <p id="c2i"></p>
-        <h5>Voltage</h5>
-        <p id="c2v"></p>
-        
-        <h3 id="c3">Cell 3</h3>
-        <h5>Current</h5>
-        <p id="c3i"></p>
-        <h5>Voltage</h5>
-        <p id="c3v"></p>
-        
-        <h3 id="c4">Cell 4</h3>
-        <h5>Current</h5>
-        <p id="c4i"></p>
-        <h5>Voltage</h5>
-        <p id="c4v"></p>
-        
-        <h3 id="c5">Cell 5</h3>
-        <h5>Current</h5>
-        <p id="c5i"></p>
-        <h5>Voltage</h5>
-        <p id="c5v"></p>
-        
-        <h3 id="c6">Cell 6</h3>
-        <h5>Current</h5>
-        <p id="c6i"></p>
-        <h5>Voltage</h5>
-        <p id="c6v"></p>
+    <canvas id="chart1"></canvas>
+    <canvas id="chart2"></canvas>
+    <canvas id="chart3"></canvas>
+    <canvas id="chart4"></canvas>
+    <canvas id="chart5"></canvas>
+    <canvas id="chart6"></canvas>
+
     </body>
 </html>

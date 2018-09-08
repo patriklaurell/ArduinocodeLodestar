@@ -1,6 +1,19 @@
 $(document).ready(function () {
     console.log("ready");
     var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+    var charts = [];
+    for(var i=0; i<6; i++) {
+      var ctx = document.getElementById("chart"+(i+1)).getContext("2d");
+      charts.push(new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ["1", "2", "3"],
+            datasets: [{
+              data: [] 
+            }]
+          }
+        }));
+    }
     socket.on('connect', function() {
         console.log("connected");
         console.log(socket.connected)
@@ -11,10 +24,19 @@ $(document).ready(function () {
         let v = msg.data.v;
         let i = msg.data.i;
         let cell_nr = msg.data.cell_nr;
-        $("#c" + (cell_nr) +"v").text(v);
-        $("#c" + (cell_nr) +"i").text(i);
-        $("#c" + (cell_nr)).css('color', 'white');
-        $("#c" + (cell_nr)).css('background-color', 'green');
+
+        var d = v.map(function(e, index) {
+          return {x: e, y: i[index]}
+        });
+
+        console.log("updating chart");
+
+        var chart = charts[cell_nr-1];
+        chart.data.datasets[0].data = d;
+        chart.update();
+        
+        console.log("d = ");
+        console.log(d);
     });
     socket.on('new_metadata', function(msg) {
         console.log("new_metadata");
