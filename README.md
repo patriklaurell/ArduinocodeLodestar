@@ -5,7 +5,15 @@
 The ground station control panel for Lodestar BEXUS consists of a Python backend and a HTML/JavaScript frontend. The back- and frontend communicate using SocketIO.
 
 ### Python backend
-The backend has only been tested using Python 3.6. Using this version of Python is suggested. By default the backend listens for UDP packages on port 8888. To function with the Arduino code the ground station needs to be assigned th IP-adress 192.168.0.3.
+The backend has only been tested using Python 3.6. Using this version of Python is suggested. By default the backend listens for UDP packages on port 8888. To function with the Arduino code the ground station needs to be assigned the IP-adress 192.168.0.3. 
+
+#### Setup
+1. Make sure the ground station computer is running Linux or OSX with Python 3 installed along with Pip for Python 3. Running Ubuntu 18.04 you will have Python 3.6 installed by default. To install Pip run ``sudo apt-get install python3-pip``.
+2. Using pip install the package ``Flask-SocketIO`` by running ``sudo pip3 install Flask-SocketIO``
+3. Clone this Git repo.
+
+#### Run
+To run the ground station navigate to the directory ``groundstation/webapp`` and run one of the following commands. Then navigate to ``localhost:5000`` in your web browser.
 
 To run in live monitor mode, listening for incomming UDP packages on port 8888 run:
 ```
@@ -15,6 +23,11 @@ $ python3 ground_station.py
 To run in file inspection mode to inspect .lodestar datafiles run:
 ```
 $ python3 ground_station.py -f <path-to-file>
+```
+
+To export data from a .lodestar file to a .mat file run:
+```
+$ python3 ground_station.py -e <path-to-file>
 ```
 
 ## On board software
