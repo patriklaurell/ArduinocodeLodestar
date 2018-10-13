@@ -12,8 +12,8 @@ Adafruit_BMP280 Thermometer;
 
 EthernetUDP Udp;
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress remoteIP(192, 168, 0, 3);
-IPAddress localIP(192, 168, 0, 200);
+IPAddress remoteIP(172, 16, 18, 130);
+IPAddress localIP(172, 16, 18, 131);
 
 // -------- Data stuff -------- //
 File dataFile;
