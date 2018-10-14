@@ -6,6 +6,7 @@ from flask import Flask, render_template, url_for, copy_current_request_context
 import time
 import random
 from threading import Thread, Event
+import matplotlib.pyplot as plt
 
 __author__ = 'patriklaurell'
 
@@ -97,6 +98,15 @@ class RecieveDataThread(Thread):
                 print("emitting new_data event")
                 socketio.emit('new_data', {'data': data}, namespace='/test')
 
+                # plot data
+                cellnr = data["cell_nr"]
+                v = data["v"]
+                i = data["i"]
+
+                currentplot = axlist[cellnr-1]
+                currentplot.cla()
+                currentplot.plot(v, i)
+
     def run(self):
         self.udpDataListener()
 
@@ -135,6 +145,21 @@ def next_frame():
         socketio.emit('new_metadata', {'data': frames[FRAME_NR]['metadata']}, namespace='/test')
         socketio.emit('new_data', {'data': frames[FRAME_NR]['data'][0]}, namespace='/test')
         socketio.emit('new_data', {'data': frames[FRAME_NR]['data'][1]}, namespace='/test')
+        # plot data
+        for data in frames[FRAME_NR]['data']:
+            cellnr = data["cell_nr"]
+            v = data["v"]
+            i = data["i"]
+
+            print("cellnr = {}".format(cellnr))
+
+            currentplot = axlist[int(cellnr > 3)][(cellnr-1) % 3]
+
+            print(currentplot)
+
+            currentplot.cla()
+            currentplot.plot(v, i)
+        
     else:
         print("Current frame_nr = {}".format(FRAME_NR))
         print("Already at last frame.")
@@ -177,6 +202,11 @@ def main():
     parser.add_argument('-f', '--file')
     parser.add_argument('--nogui')
     args = parser.parse_args()
+
+    global fig, axlist
+    fig, axlist = plt.subplots(2,3)
+    plt.ion()
+
 
     global FILE_NAME
     global LIVE_MODE
