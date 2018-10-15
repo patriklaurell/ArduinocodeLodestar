@@ -11,7 +11,7 @@ from threading import Thread, Event
 
 __author__ = 'patriklaurell'
 
-UDP_IP = "192.168.0.3"
+UDP_IP = "172.16.18.130"
 UDP_PORT = 8888
 
 DATA_FRAME_LEN = 2058
@@ -218,12 +218,20 @@ def main():
         try:
             print("Processing frames in file...")
             cells = [[],[],[],[],[],[]]
+            temp = []
+            time = []
+            frame = []
+            rad = []
             packet = f.read(DATA_FRAME_LEN)
             length = 0
             while not all(x==0 for x in packet):
                 metadata = decode_packet(packet[0:8])
                 data1 = decode_packet(packet[8:1025+8])
                 data2 = decode_packet(packet[1025+8:])
+                temp.append(metadata['temp'])
+                frame.append(metadata['frame'])
+                rad.append(metadata['rad'])
+                time.append(metadata['time'])
                 length += 1
                 
                 cell1 = data1['cell_nr']
@@ -237,6 +245,7 @@ def main():
         finally:
             print("Writing {} frames to iv_curves.mat...".format(length))
             sio.savemat('iv_curves.mat', {'cell'+str(i+1): cells[i] for i in range(6)})
+            sio.savemat('metadata.mat', {'time': time, 'frame': frame, 'temp': temp, 'rad':rad})
             print("...done!")
             f.close()
 
