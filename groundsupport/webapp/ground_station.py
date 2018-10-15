@@ -1,4 +1,6 @@
 import sys
+import scipy.io as sio
+import numpy as np
 import argparse
 import socket
 from flask_socketio import SocketIO, emit
@@ -176,6 +178,7 @@ def main():
     parser = argparse.ArgumentParser(description="Lodestar BEXUS ground support program.")
     parser.add_argument('-f', '--file')
     parser.add_argument('--nogui')
+    parser.add_argument('-e', '--export')
     args = parser.parse_args()
 
     global FILE_NAME
@@ -206,6 +209,36 @@ def main():
             f.close()
 
         socketio.run(app)
+
+    elif args.export is not None:
+        FILE_NAME = args.export
+        LIVE_MODE = False
+        print("Exporting data...")
+        f = open(FILE_NAME, 'rb')
+        try:
+            print("Processing frames in file...")
+            cells = [[],[],[],[],[],[]]
+            packet = f.read(DATA_FRAME_LEN)
+            length = 0
+            while not all(x==0 for x in packet):
+                metadata = decode_packet(packet[0:8])
+                data1 = decode_packet(packet[8:1025+8])
+                data2 = decode_packet(packet[1025+8:])
+                length += 1
+                
+                cell1 = data1['cell_nr']
+                cell2 = data2['cell_nr']
+                if cell1 >= 1 and cell1 <= 6:
+                    cells[cell1-1].append([data1['v'], data1['i']])
+                if cell2 >= 1 and cell2 <= 6:
+                    cells[cell2-1].append([data2['v'], data2['i']])
+                packet = f.read(DATA_FRAME_LEN)
+            print("...done!")
+        finally:
+            print("Writing {} frames to iv_curves.mat...".format(length))
+            sio.savemat('iv_curves.mat', {'cell'+str(i+1): cells[i] for i in range(6)})
+            print("...done!")
+            f.close()
 
     # Live monitor mode
     else:
