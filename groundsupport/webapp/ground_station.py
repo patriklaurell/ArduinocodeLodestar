@@ -244,7 +244,7 @@ def main():
             print("...done!")
         finally:
             print("Writing {} frames to iv_curves.mat...".format(length))
-            sio.savemat('iv_curves.mat', {'cell'+str(i+1): cells[i] for i in range(6)})
+            sio.savemat('iv_curves.mat', {'cell'+str(i+1): np.array(cells[i], dtype='Float16') for i in range(6)})
             sio.savemat('metadata.mat', {'time': time, 'frame': frame, 'temp': temp, 'rad':rad})
             print("...done!")
             f.close()
