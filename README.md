@@ -1,6 +1,6 @@
 # Lodestar BEXUS
 
-The code used in the [BEXUS](http://rexusbexus.net/bexus/) 27 [Lodestar](http://rexusbexus.net/experiments/scientific-research/materials-science/). For intrest in results of the project [this](http://rexusbexus.net/wp-content/uploads/2019/08/A-184laurell.pdf).
+The code used in the [BEXUS](http://rexusbexus.net/bexus/) 27 [Lodestar](http://rexusbexus.net/experiments/scientific-research/materials-science/). For intrest in results of the project read [this](http://rexusbexus.net/wp-content/uploads/2019/08/A-184laurell.pdf).
 
 ## Ground Station
 
