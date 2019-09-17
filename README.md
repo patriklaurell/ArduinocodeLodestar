@@ -1,5 +1,7 @@
 # Lodestar BEXUS
 
+The code used in the [BEXUS](http://rexusbexus.net/bexus/) 27 [Lodestar](http://rexusbexus.net/experiments/scientific-research/materials-science/). For intrest in results of the project [this](http://rexusbexus.net/wp-content/uploads/2019/08/A-184laurell.pdf).
+
 ## Ground Station
 
 The ground station control panel for Lodestar BEXUS consists of a Python backend and a HTML/JavaScript frontend. The back- and frontend communicate using SocketIO.
